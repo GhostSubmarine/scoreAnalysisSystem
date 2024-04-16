@@ -4,7 +4,6 @@ import { ref } from 'vue'
 //雷达图
 const getRadar = () => {
   const url = '/achievementanalysis_stu/radar'
-  const params = {}
   axios.get(url)
     .then(res => {
 
@@ -16,7 +15,6 @@ const getRadar = () => {
 //散点图
 const getSubscore = () => {
   const url = '/achievementanalysis_stu/subscore'
-  const params = {}
   axios.get(url)
     .then(res => {
 
@@ -28,7 +26,6 @@ const getSubscore = () => {
 // 折线图
 const getScoreAnystage = () => {
   const url = '/achievementanalysis_stu/score-anystage'
-  const params = {}
   axios.get(url)
     .then(res => {
 
@@ -37,18 +34,94 @@ const getScoreAnystage = () => {
 
     })
 }
-// 折线图
-// const getScoreAnystage = () => {
-//   const url = '/achievementanalysis_stu/score-anystage'
-//   const params = {}
-//   axios.get(url)
-//     .then(res => {
+// 平均分/标准差分析法
+const getPassrate = () => {
+  const url = `/achievementanalysis_stu/passrate?jsid=${jsid}&gradeName=${gradeName}&className=${className}&kstime=${kstime}`
+  axios.get(url)
+    .then(res => {
 
-//     })
-//     .catch(err => {
+    })
+    .catch(err => {
 
-//     })
-// }
+    })
+}
+// 成绩预测相关
+const getRegression = () => {
+  const url = `/achievementanalysis_stu/regression?jsid=${jsid}&gradeName=${gradeName}&className=${className}&kstime=${kstime}`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
+// 相同年级 学科分析 及格率
+const getClasspassrateForTea = () => {
+  const url = `/achievementanalysis_tea/classpassrateForTea`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
+// 相同学科同班不同性别 及格率
+const getClasspassrateForTeaBySex = () => {
+  const url = `/achievementanalysis_tea/classpassrateForTeaBySex`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
+// 不同学科同一年级 及格率
+const getClasspassrateForTeaByScore = () => {
+  const url = `/achievementanalysis_tea/classpassrateForTeaByScore?gradeName=${gradeName}`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
+// 按分数排名段分析：不同分数排名段，同一学
+const getClasspassrateForTeaByScoreRange = () => {
+  const url = `/achievementanalysis_tea/classpassrateForTeaByScoreRange?kstime=${kstime}`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
+// 个体建议
+const getEntitySuggest = () => {
+  const url = `/suggest/entitySuggest?kstime=${kstime}&lastKstime=${lastKstime}&className=${className}&gradeName=${gradeName}`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
+// 综合建议
+const getTotalSuggest = () => {
+  const url = `/suggest/totalSuggest?kstime=${kstime}&lastKstime=${lastKstime}&className=${className}&gradeName=${gradeName}`
+  axios.get(url)
+    .then(res => {
+
+    })
+    .catch(err => {
+
+    })
+}
 const option1 = ref({
   title: {
     // text: 'Basic Radar Chart'
