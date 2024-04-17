@@ -9,10 +9,10 @@ import { RouterView } from 'vue-router'
         default-active="1"
       >
         <el-menu-item index="1">
-          <RouterLink to="/main/dataAnalysisSystem">信息管理</RouterLink>
+          <RouterLink to="/main/messageManager">信息管理</RouterLink>
         </el-menu-item>
         <el-menu-item index="2">
-          <RouterLink to="/main/dataAnalysisSystem">成绩操作</RouterLink>
+          <RouterLink to="/main/gradeOperate">成绩操作</RouterLink>
         </el-menu-item>
         <el-menu-item index="3">
           <RouterLink to="/main/dataAnalysisSystem">数据分析</RouterLink>

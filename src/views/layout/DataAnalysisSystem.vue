@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios'
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { ElLoading } from 'element-plus'
 import * as echarts from 'echarts'
 import ecStat from 'echarts-stat'
@@ -1020,6 +1020,10 @@ const option12 = ref({
     }
   ]
 })
+const changeGrage = () => {
+  getClass()
+  getAllData()
+}
 </script>
 
 <template>
@@ -1030,6 +1034,7 @@ const option12 = ref({
           style="width: 150px;"
           v-model="formObj.kstime"
           placeholder="考试时间"
+          @change="getAllData()"
           clearable
         >
           <el-option v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
@@ -1040,6 +1045,7 @@ const option12 = ref({
           style="width: 150px;"
           v-model="formObj.lastKstime"
           placeholder="上次考试时间"
+          @change="getAllData()"
           clearable
         >
           <el-option v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
@@ -1050,6 +1056,7 @@ const option12 = ref({
           style="width: 150px;"
           v-model="formObj.gradeName"
           placeholder="年级"
+          @change="changeGrage()"
           clearable
         >
           <el-option v-for="item in gradeData" :label="item.label" :value="item.value" :key="item.value" />
@@ -1060,6 +1067,7 @@ const option12 = ref({
           style="width: 150px;"
           v-model="formObj.className"
           placeholder="班级"
+          @change="getAllData()"
           clearable
         >
           <el-option v-for="item in classData" :label="item.label" :value="item.value" :key="item.value" />
