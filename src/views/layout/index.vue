@@ -19,7 +19,10 @@ import { RouterView } from 'vue-router'
         </el-menu-item>
       </el-menu>
     </el-aside>
-    <RouterView />
+    <el-container>
+      <el-header style="height: 60px; line-height: 60px; background-color: #f2f2f2; padding-left: 40%;">分数分析系统</el-header>
+      <RouterView />
+    </el-container>
   </el-container>
 </template>
 
