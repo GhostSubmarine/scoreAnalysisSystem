@@ -1,15 +1,15 @@
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue'
 import axios from 'axios'
-import type { UploadProps, UploadUserFile } from 'element-plus'
 const fileList = ref([])
-const handleChange: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
+const handleChange = (uploadFile, uploadFiles) => {
   fileload(uploadFile.raw)
   // fileList.value = fileList.value.slice(-3)
 }
 const fileload = () => {
   const url = '/account/fileload'
   const formData = new FormData()
+  formData.append('f', file)
   axios.post(url, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -27,7 +27,7 @@ const fileload = () => {
 </script>
 
 <template>
-  <main style="display: flex; height: 100%;">
+  <el-main style="display: flex; height: 100%;">
     <el-upload
       style="margin: auto;"
       v-model:file-list="fileList"
@@ -37,13 +37,8 @@ const fileload = () => {
       :on-change="handleChange"
     >
       <el-button type="primary">上传文件</el-button>
-      <!-- <template #tip>
-        <div class="el-upload__tip">
-          jpg/png files with a size less than 500KB.
-        </div>
-      </template> -->
     </el-upload>
-  </main>
+  </el-main>
 </template>
 
 <style lang="scss" scoped>

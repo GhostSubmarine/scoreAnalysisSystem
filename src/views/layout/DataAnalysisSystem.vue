@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios'
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { ElLoading } from 'element-plus'
 import * as echarts from 'echarts'
 import ecStat from 'echarts-stat'
@@ -109,7 +109,6 @@ const getGrade = () => {
             value: val,
             label: val
           }))
-          resolv
           resolve(res)
         }
         else {
@@ -130,7 +129,6 @@ const getClass = () => {
             value: val,
             label: val
           }))
-          resolv
           resolve(res)
         }
         else {
