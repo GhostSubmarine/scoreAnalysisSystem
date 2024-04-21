@@ -4,7 +4,7 @@ const quit = () => {
   window.sessionStorage.removeItem('userInfo')
   window.location.reload()
 }
-const juese = '管理员'
+const juese = '老师'
 </script>
 <template>
   <el-container style="width: 100vw; height: 100vh;">

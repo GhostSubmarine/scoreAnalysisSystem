@@ -6,7 +6,7 @@ import * as echarts from 'echarts'
 import ecStat from 'echarts-stat'
 echarts.registerTransform(ecStat.transform.regression)
 // const juese = window.sessionStorage.getItem('juese')
-const juese = '学生'
+const juese = '老师'
 const kstimeData = ref([])
 const gradeData = ref([])
 const classData = ref([])

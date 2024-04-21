@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { ElLoading, ElMessage } from 'element-plus'
-const juese = '学生'
+const juese = '老师'
 const userInfo = window.sessionStorage.getItem('userInfo')
 const gradeData = ref([])
 const classData = ref([])
@@ -69,25 +69,65 @@ const rules = reactive({
 })
 const tableData = ref([
   {
-    date: '2016-05-03',
-    name: 'Tom',
-    address: 'No. 189, Grove St, Los Angeles',
+    '学生号': (Math.random() * 10000).toFixed(0),
+    '语文': (Math.random() * 100).toFixed(0),
+    '数学': (Math.random() * 100).toFixed(0),
+    '英语': (Math.random() * 100).toFixed(0),
+    '政治': (Math.random() * 100).toFixed(0),
+    '地理': (Math.random() * 100).toFixed(0),
+    '生物': (Math.random() * 100).toFixed(0),
+    '历史': (Math.random() * 100).toFixed(0)
   },
   {
-    date: '2016-05-02',
-    name: 'Tom',
-    address: 'No. 189, Grove St, Los Angeles',
+    '学生号': (Math.random() * 10000).toFixed(0),
+    '语文': (Math.random() * 100).toFixed(0),
+    '数学': (Math.random() * 100).toFixed(0),
+    '英语': (Math.random() * 100).toFixed(0),
+    '政治': (Math.random() * 100).toFixed(0),
+    '地理': (Math.random() * 100).toFixed(0),
+    '生物': (Math.random() * 100).toFixed(0),
+    '历史': (Math.random() * 100).toFixed(0)
   },
   {
-    date: '2016-05-04',
-    name: 'Tom',
-    address: 'No. 189, Grove St, Los Angeles',
+    '学生号': (Math.random() * 10000).toFixed(0),
+    '语文': (Math.random() * 100).toFixed(0),
+    '数学': (Math.random() * 100).toFixed(0),
+    '英语': (Math.random() * 100).toFixed(0),
+    '政治': (Math.random() * 100).toFixed(0),
+    '地理': (Math.random() * 100).toFixed(0),
+    '生物': (Math.random() * 100).toFixed(0),
+    '历史': (Math.random() * 100).toFixed(0)
   },
   {
-    date: '2016-05-01',
-    name: 'Tom',
-    address: 'No. 189, Grove St, Los Angeles',
+    '学生号': (Math.random() * 10000).toFixed(0),
+    '语文': (Math.random() * 100).toFixed(0),
+    '数学': (Math.random() * 100).toFixed(0),
+    '英语': (Math.random() * 100).toFixed(0),
+    '政治': (Math.random() * 100).toFixed(0),
+    '地理': (Math.random() * 100).toFixed(0),
+    '生物': (Math.random() * 100).toFixed(0),
+    '历史': (Math.random() * 100).toFixed(0)
   },
+  {
+    '学生号': (Math.random() * 10000).toFixed(0),
+    '语文': (Math.random() * 100).toFixed(0),
+    '数学': (Math.random() * 100).toFixed(0),
+    '英语': (Math.random() * 100).toFixed(0),
+    '政治': (Math.random() * 100).toFixed(0),
+    '地理': (Math.random() * 100).toFixed(0),
+    '生物': (Math.random() * 100).toFixed(0),
+    '历史': (Math.random() * 100).toFixed(0)
+  },
+  {
+    '学生号': (Math.random() * 10000).toFixed(0),
+    '语文': (Math.random() * 100).toFixed(0),
+    '数学': (Math.random() * 100).toFixed(0),
+    '英语': (Math.random() * 100).toFixed(0),
+    '政治': (Math.random() * 100).toFixed(0),
+    '地理': (Math.random() * 100).toFixed(0),
+    '生物': (Math.random() * 100).toFixed(0),
+    '历史': (Math.random() * 100).toFixed(0)
+  }
 ])
 const formObj = reactive({
   gradeName: '',
@@ -357,9 +397,14 @@ const changeGrage = () => {
       <el-button type="primary" v-if="juese === '老师'">手动添加成绩</el-button>
     </el-space>
     <el-table :data="tableData" stripe style="width: 100%" v-if="tableData.length > 0">
-      <el-table-column prop="date" label="Date" width="180" v-for="item in 3" :key="item + ''" />
-      <el-table-column prop="name" label="Name" width="180" />
-      <el-table-column prop="address" label="Address" />
+      <el-table-column prop="学生号" label="学生号"  />
+      <el-table-column prop="英语" label="英语"  />
+      <el-table-column prop="数学" label="数学"  />
+      <el-table-column prop="语文"  label="语文" />
+      <el-table-column prop="政治"  label="政治" />
+      <el-table-column prop="生物"  label="生物" />
+      <el-table-column prop="历史"  label="历史" />
+      <el-table-column prop="地理"  label="地理" />
     </el-table>
     <el-empty description="暂无数据" v-else />
   </el-main>
