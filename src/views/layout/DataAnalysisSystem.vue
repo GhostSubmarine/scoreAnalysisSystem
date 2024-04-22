@@ -1,12 +1,12 @@
 <script setup>
 import axios from 'axios'
 import { ref, onMounted, reactive } from 'vue'
-import { ElLoading } from 'element-plus'
+import { ElLoading, ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import ecStat from 'echarts-stat'
 echarts.registerTransform(ecStat.transform.regression)
-// const juese = window.sessionStorage.getItem('juese')
-const juese = '老师'
+const juese = window.sessionStorage.getItem('juese')
+const jsid = window.sessionStorage.getItem('jsid')
 const kstimeData = ref([])
 const gradeData = ref([])
 const classData = ref([])
@@ -40,7 +40,7 @@ const formObj = reactive({
   className: ''
 })
 onMounted(() => {
-  // getAllData()
+  getAllData()
 })
 const getAllData = () => {
   const loading = ElLoading.service({
@@ -48,586 +48,738 @@ const getAllData = () => {
     text: '数据请求中',
     background: 'rgba(0, 0, 0, 0.7)',
   })
-  if (juese === '老师') {
+  if (juese === 'student') {
     Promise.all([
-      getRadar, 
-      getSubscore, 
-      getScoreAnystage, 
-      getPassrate, 
-      getRegression, 
-      getEntitySuggest,
-      getKstime,
-      getGrade
+      getRadar(), 
+      getSubscore(), 
+      getScoreAnystage(), 
+      getPassrate(), 
+      getRegression(), 
+      getEntitySuggest(),
+      getKstime(),
+      getGrade()
     ])
-      .finally(() => {
-        loading.close()
-      })
+    .finally(() => {
+      loading.close()
+    })
   }
   else {
     Promise.all([
-      getClasspassrateForTea, 
-      getClasspassrateForTeaBySex, 
-      getClasspassrateForTeaByScore, 
-      getClasspassrateForTeaByScoreRange, 
-      getTotalSuggest,
-      getKstime,
-      getGrade
+      getClasspassrateForTea(), 
+      getClasspassrateForTeaBySex(), 
+      getClasspassrateForTeaByScore(), 
+      getClasspassrateForTeaByScoreRange(), 
+      getTotalSuggest(),
+      getKstime(),
+      getGrade()
     ])
-      .finally(() => {
-          loading.close()
-        })
+    .finally(() => {
+      loading.close()
+    })
   }
 }
 //获取考试时间
 const getKstime = () => {
-  const url = '/data/getKstime'
+  const url = '/api/data/getKstime'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          kstimeData.value = res.data.map(val => ({
-            value: val,
-            label: val
-          }))
-          resolve(res)
-        }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        kstimeData.value = res.data.data.map(val => ({
+          value: val,
+          label: val
+        }))
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 //获取年级
 const getGrade = () => {
-  const url = '/data/getGrade'
+  const url = '/api/data/getGrade'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          gradeData.value = res.data.map(val => ({
-            value: val,
-            label: val
-          }))
-          resolve(res)
-        }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        gradeData.value = res.data.data.map(val => ({
+          value: val,
+          label: val
+        }))
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 //获取班级
 const getClass = () => {
-  const url = `data/getClass?gradeName=${formObj.gradeName}`
+  if (!formObj.gradeName) {
+    return 
+  }
+  const url = `/api/data/getClass?gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          classData.value = res.data.map(val => ({
-            value: val,
-            label: val
-          }))
-          resolve(res)
-        }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        classData.value = res.data.data.map(val => ({
+          value: val,
+          label: val
+        }))
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 //雷达图
 const getRadar = () => {
-  const url = '/achievementanalysis_stu/radar'
+  const url = '/api/achievementanalysis_stu/radar'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const max = Math.max(res.data.map(obj => obj.value))
-          option1.value = {
-            ...option1.value,
-            radar: {
-              indicator: res.data.map(obj => ({name: obj.name, max}))
-            },
-            series: res.data
-          }
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const max = Math.max(...res.data.data.map(obj => obj.value))
+        option1.value = {
+          radar: {
+            indicator: res.data.data.map(obj => ({name: obj.name, max}))
+          },
+          series: [{
+            name: '7个学科',
+            type: 'radar',
+            data: [{
+              value: res.data.data.map(obj => obj.value),
+              name: '年级'
+            }] 
+          }]
         }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+        console.log(option1.value)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 //散点图
 const getSubscore = () => {
-  const url = '/achievementanalysis_stu/subscore'
+  const url = '/api/achievementanalysis_stu/subscore'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const data = res.data
-          const title = []
-          const singleAxis = []
-          const series = []
-          const scores = new Array(6).fill(1).map((_, idx) => `${idx * 20}`)
-          const subjects = data.map(obj => obj.name)
-          const seriesData = []
-          data.forEach((el, idx) => {
-            !seriesData[idx] && (seriesData[idx] = [])
-            const values = el.value
-            for (let i = 0; i <= 5; i++) {
-              let length
-              if (i === 5) {
-                length = values.filter(val => val <= (i + 1) * 20 && val >= i * 20)
-              }
-              else {
-                length = values.filter(val => val < (i + 1) * 20 && val >= i * 20)
-              }
-              seriesData[idx].push([i, length])
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const data = res.data.data
+        const title = []
+        const singleAxis = []
+        const series = []
+        const subjects = data.map(obj => obj.name)
+        const seriesData = []
+        data.forEach((el, idx) => {
+          !seriesData[idx] && (seriesData[idx] = [])
+          const values = el.value
+          for (let i = 0; i <= 5; i++) {
+            let length
+            if (i === 5) {
+              length = values.filter(val => val <= (i + 1) * 20 && val >= i * 20)
+            }
+            else {
+              length = values.filter(val => val < (i + 1) * 20 && val >= i * 20)
+            }
+            seriesData[idx].push([i, length])
+          }
+        })
+        data.forEach((el, idx) => {
+          title.push({
+            textBaseline: 'middle',
+            top: ((idx + 0.5) * 100) / 7 + '%',
+            text: subjects[idx]
+          })
+          singleAxis.push({
+            left: 150,
+            type: 'category',
+            boundaryGap: false,
+            data: new Array(6).fill(1).map((_, idx) => `${idx * 20}`),
+            top: (idx * 100) / 7 + 5 + '%',
+            height: 100 / 7 - 10 + '%',
+            axisLabel: {
+              interval: 0
             }
           })
-          data.forEach((el, idx) => {
-            title.push({
-              textBaseline: 'middle',
-              top: ((idx + 0.5) * 100) / 7 + '%',
-              text: subjects,
-              left: 0
-            })
-            singleAxis.push({
-              left: 150,
-              type: 'category',
-              boundaryGap: false,
-              data: scores,
-              top: (idx * 100) / 7 + 5 + '%',
-              height: 100 / 7 - 10 + '%',
-              axisLabel: {
-                interval: 2
-              }
-            })
-            series.push({
-              singleAxisIndex: idx,
-              coordinateSystem: 'singleAxis',
-              type: 'scatter',
-              data: seriesData[idx],
-              symbolSize: function (dataItem) {
-                return dataItem[1] * 4;
-              }
-            })
-          });
-          // series
-          option2.value = {
-            ...option2.value
-          }
-          resolve(res)
+          series.push({
+            singleAxisIndex: idx,
+            coordinateSystem: 'singleAxis',
+            type: 'scatter',
+            data: seriesData[idx],
+            symbolSize: function (dataItem) {
+              return dataItem[1] * 0.4;
+            }
+          })
+        });
+        // series
+        option2.value = {
+          ...option2.value,
+          title,
+          singleAxis,
+          series
         }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 折线图
 const getScoreAnystage = () => {
-  const url = '/achievementanalysis_stu/score-anystage'
+  const url = '/api/achievementanalysis_stu/score-anystage'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          option1.value = {
-            ...option3.value,
-            xAxis: {
-              type: 'category',
-              data: res.data.map(obj => obj.name)
-            },
-            series: [
-              {
-                data: res.data,
-                type: 'line'
-              }
-            ]
-          }
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        option3.value = {
+          ...option3.value,
+          xAxis: {
+            type: 'category',
+            data: res.data.data.map(obj => obj.name)
+          },
+          series: [
+            {
+              data: res.data.data,
+              type: 'line'
+            }
+          ]
         }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 平均分/标准差分析法
 const getPassrate = () => {
-  const url = `/achievementanalysis_stu/passrate?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
+  if (!formObj.kstime || !formObj.className || !formObj.gradeName) {
+    return
+  }
+  const url = `/api/achievementanalysis_stu/passrate?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const avgForsubjectsomeonestudent = res.data.avgForsubjectsomeonestudent
-          const avgForTotalpointsAllstudent = res.data.avgForTotalpointsAllstudent
-          const standardDeviationForTotalpointsAllStudentOneSubject = res.data.standardDeviationForTotalpointsAllStudentOneSubject
-          avgForTotalpointsSomeoneStudent.value = res.data.avgForTotalpointsSomeoneStudent
-          standardDeviationForTotalpointsAllStudent.value = res.data.standardDeviationForTotalpointsAllStudent
-          const data4 = []
-          const xAxisData = []
-          const data10 = []
-          const data11 = []
-          for (let key in avgForsubjectsomeonestudent) {
-            data4.push({
-              name: key,
-              value: avgForsubjectsomeonestudent[key]
-            })
-            xAxisData.push(key)
-          }
-          for (let key in avgForTotalpointsAllstudent) {
-            data10.push({
-              name: key,
-              value: avgForTotalpointsAllstudent[key]
-            })
-          }
-          for (let key in standardDeviationForTotalpointsAllStudentOneSubject) {
-            data11.push({
-              name: key,
-              value: standardDeviationForTotalpointsAllStudentOneSubject[key]
-            })
-          }
-          option4.value = {
-            xAxis: {
-              data: xAxisData,
-              type: 'category'
-            },
-            yAxis: {
-              type: 'value'
-            },
-            series: [
-              {
-                data: data4,
-                type: 'pie'
-              }
-            ]
-          }
-          option10.value = {
-            title: {
-              text: '所有人总成绩平均分',
-              left: 'center',
-            },
-            tooltip: {
-              trigger: 'item'
-            },
-            series: [
-              {
-                name: '分数',
-                type: 'pie',
-                radius: '50%',
-                data: data10,
-                emphasis: {
-                  itemStyle: {
-                    shadowBlur: 10,
-                    shadowOffsetX: 0,
-                    shadowColor: 'rgba(0, 0, 0, 0.5)'
-                  }
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const avgForsubjectsomeonestudent = res.data.data.avgForsubjectsomeonestudent
+        const avgForTotalpointsAllstudent = res.data.data.avgForTotalpointsAllstudent
+        const standardDeviationForTotalpointsAllStudentOneSubject = res.data.data.standardDeviationForTotalpointsAllStudentOneSubject
+        avgForTotalpointsSomeoneStudent.value = res.data.data.avgForTotalpointsSomeoneStudent
+        standardDeviationForTotalpointsAllStudent.value = res.data.data.standardDeviationForTotalpointsAllStudent
+        const data4 = []
+        const xAxisData = []
+        const data10 = []
+        const data11 = []
+        for (let key in avgForsubjectsomeonestudent) {
+          data4.push({
+            name: key,
+            value: avgForsubjectsomeonestudent[key]
+          })
+          xAxisData.push(key)
+        }
+        for (let key in avgForTotalpointsAllstudent) {
+          data10.push({
+            name: key,
+            value: avgForTotalpointsAllstudent[key]
+          })
+        }
+        for (let key in standardDeviationForTotalpointsAllStudentOneSubject) {
+          data11.push({
+            name: key,
+            value: standardDeviationForTotalpointsAllStudentOneSubject[key]
+          })
+        }
+        option4.value = {
+          xAxis: {
+            data: xAxisData,
+            type: 'category'
+          },
+          yAxis: {
+            type: 'value'
+          },
+          series: [
+            {
+              data: data4,
+              type: 'pie'
+            }
+          ]
+        }
+        option10.value = {
+          title: {
+            text: '所有人总成绩平均分',
+            left: 'center',
+          },
+          tooltip: {
+            trigger: 'item'
+          },
+          series: [
+            {
+              name: '分数',
+              type: 'pie',
+              radius: '50%',
+              data: data10,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
                 }
               }
-            ]
-          }
-          option11.value = {
-            title: {
-              text: '所有学生单科成绩标准差',
-              left: 'center',
-            },
-            tooltip: {
-              trigger: 'item'
-            },
-            series: [
-              {
-                name: '标准差',
-                type: 'pie',
-                radius: '50%',
-                data: data11,
-                emphasis: {
-                  itemStyle: {
-                    shadowBlur: 10,
-                    shadowOffsetX: 0,
-                    shadowColor: 'rgba(0, 0, 0, 0.5)'
-                  }
+            }
+          ]
+        }
+        option11.value = {
+          title: {
+            text: '所有学生单科成绩标准差',
+            left: 'center',
+          },
+          tooltip: {
+            trigger: 'item'
+          },
+          series: [
+            {
+              name: '标准差',
+              type: 'pie',
+              radius: '50%',
+              data: data11,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
                 }
               }
-            ]
-          }
-          resolve(res)
+            }
+          ]
         }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 成绩预测相关
 const getRegression = () => {
-  const url = `/achievementanalysis_stu/regression?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
+  if (!formObj.gradeName || !formObj.className || formObj.kstime) {
+    return
+  }
+  const url = `/api/achievementanalysis_stu/regression?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => {
-    axios.get(url)
-      .then(res => {
-        if (res.code === 200) {
-          const data = res.data
-          const seriesData = []
-          const xAxisData = []
-          data.forEach((el, idx) => {
-            xAxisData.push(el.name)
-            el.scoresums.forEach(val => seriesData.push([idx, val]))
-          })
-          option5.value = {
-            dataset: [
-            {
-              source: seriesData
-            },
-            {
-              transform: {
-                type: 'ecStat:regression',
-                config: { method: 'polynomial', order: 3 }
-              }
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code === 200) {
+        const data = res.data.data
+        const seriesData = []
+        const xAxisData = []
+        data.forEach((el, idx) => {
+          xAxisData.push(el.name)
+          el.scoresums.forEach(val => seriesData.push([idx, val]))
+        })
+        option5.value = {
+          dataset: [
+          {
+            source: seriesData
+          },
+          {
+            transform: {
+              type: 'ecStat:regression',
+              config: { method: 'polynomial', order: 3 }
             }
-          ],
-          title: {
-            text: '成绩预测',
-            subtext: '',
-            left: 'center'
-          },
-          tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-              type: 'cross'
-            }
-          },
-          xAxis: {
-            type: 'category',
-            splitLine: {
-              lineStyle: {
-                type: 'dashed'
-              }
-            },
-            data: xAxisData
-          },
-          yAxis: {
-            splitLine: {
-              lineStyle: {
-                type: 'dashed'
-              }
+          }
+        ],
+        title: {
+          text: '成绩预测',
+          subtext: '',
+          left: 'center'
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'cross'
+          }
+        },
+        xAxis: {
+          type: 'category',
+          splitLine: {
+            lineStyle: {
+              type: 'dashed'
             }
           },
-          series: [
-            {
-              name: 'scatter',
-              type: 'scatter',
-              datasetIndex: 0
-            },
-            {
-              name: 'line',
-              type: 'line',
-              smooth: true,
-              datasetIndex: 1,
-              symbolSize: 0.1,
-              symbol: 'circle',
-              label: { show: true, fontSize: 16 },
-              labelLayout: { dx: -20 },
-              encode: { label: 2, tooltip: 1 }
+          data: xAxisData
+        },
+        yAxis: {
+          splitLine: {
+            lineStyle: {
+              type: 'dashed'
             }
-          ]}
-          resolve(res)
-        }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+          }
+        },
+        series: [
+          {
+            name: 'scatter',
+            type: 'scatter',
+            datasetIndex: 0
+          },
+          {
+            name: 'line',
+            type: 'line',
+            smooth: true,
+            datasetIndex: 1,
+            symbolSize: 0.1,
+            symbol: 'circle',
+            label: { show: true, fontSize: 16 },
+            labelLayout: { dx: -20 },
+            encode: { label: 2, tooltip: 1 }
+          }
+        ]}
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   })
   
 }
 // 相同年级 学科分析 及格率
 const getClasspassrateForTea = () => {
-  const url = '/achievementanalysis_tea/classpassrateForTea'
+  const url = '/api/achievementanalysis_tea/classpassrateForTea'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const data = []
-          for (let key in res.data) {
-            data.push({
-              name: key,
-              value: res.data[key]
-            })
-          }
-          option6.value = {
-            ...option6.value,
-            series: [
-              ...option6.series[0],
-              data
-            ]
-          }
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const data = []
+        for (let key in res.data.data) {
+          data.push({
+            name: key,
+            value: res.data.data[key]
+          })
         }
-        else {
-          reject(res)
+        option6.value = {
+          ...option6.value,
+          series: [
+            ...option6.series[0],
+            data
+          ]
         }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 相同学科同班不同性别 及格率
 const getClasspassrateForTeaBySex = () => {
-  const url = '/achievementanalysis_tea/classpassrateForTeaBySex'
+  const url = '/api/achievementanalysis_tea/classpassrateForTeaBySex'
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const data = []
-          for (let key in res.data) {
-            data.push({
-              name: key,
-              value: res.data[key] * 100
-            })
-          }
-          option7.value = {
-            ...option7.value,
-            series: [
-              ...option7.series[0],
-              data
-            ]
-          }
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const data = []
+        for (let key in res.data.data) {
+          data.push({
+            name: key,
+            value: res.data.data[key] * 100
+          })
         }
-        else {
-          reject(res)
+        option7.value = {
+          ...option7.value,
+          series: [
+            ...option7.series[0],
+            data
+          ]
         }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 不同学科同一年级 及格率
 const getClasspassrateForTeaByScore = () => {
-  const url = `/achievementanalysis_tea/classpassrateForTeaByScore?gradeName=${formObj.gradeName}`
+  if (!formObj.gradeName) {
+    return
+  }
+  const url = `/api/achievementanalysis_tea/classpassrateForTeaByScore?gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const data = []
-          for (let key in res.data) {
-            data.push({
-              name: key,
-              value: res.data[key] * 100
-            })
-          }
-          option8.value = {
-            ...option8.value,
-            series: [
-              ...option8.series[0],
-              data
-            ]
-          }
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const data = []
+        for (let key in res.data.data) {
+          data.push({
+            name: key,
+            value: res.data.data[key] * 100
+          })
         }
-        else {
-          reject(res)
+        option8.value = {
+          ...option8.value,
+          series: [
+            ...option8.series[0],
+            data
+          ]
         }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 按分数排名段分析：不同分数排名段，同一学期
 const getClasspassrateForTeaByScoreRange = () => {
-  const url = `/achievementanalysis_tea/classpassrateForTeaByScoreRange?kstime=${formObj.kstime}`
+  if (!formObj.kstime) {
+    return
+  }
+  const url = `/api/achievementanalysis_tea/classpassrateForTeaByScoreRange?kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code == 200) {
-          const data = []
-          for (let key in res.data) {
-            data.push({
-              name: key,
-              value: res.data[key] * 100
-            })
-          }
-          option9.value = {
-            ...option9.value,
-            series: [
-              ...option9.series[0],
-              data
-            ]
-          }
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        const data = []
+        for (let key in res.data.data) {
+          data.push({
+            name: key,
+            value: res.data.data[key] * 100
+          })
         }
-        else {
-          reject(res)
+        option9.value = {
+          ...option9.value,
+          series: [
+            ...option9.series[0],
+            data
+          ]
         }
-      })
-      .catch(reject)
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 // 个体建议
 const getEntitySuggest = () => {
-  const url = `/suggest/entitySuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
+  if (!formObj.kstime || !formObj.lastKstime || !formObj.className || !formObj.gradeName) {
+    return
+  }
+  const url = `/api/suggest/entitySuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code === 200) {
-          rankingMsg.value = res.data.rankingMsg
-          const obj = res.data.dispersionMsgMap
-          const arr = []
-          for (let key in obj) {
-            arr.push({
-              value: obj[key],
-              label: key
-            })
-          }
-          dispersionMsgMap.value = arr
-          stability.value = res.data.stability
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code === 200) {
+        rankingMsg.value = res.data.data.rankingMsg
+        const obj = res.data.data.dispersionMsgMap
+        const arr = []
+        for (let key in obj) {
+          arr.push({
+            value: obj[key],
+            label: key
+          })
         }
-        else {
-          reject(res)
-        }
-      })
-      .catch(reject)
+        dispersionMsgMap.value = arr
+        stability.value = res.data.data.stability
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
   
 }
 // 综合建议
 const getTotalSuggest = () => {
-  const url = `/suggest/totalSuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
+  if (!formObj.kstime || !formObj.lastKstime || !formObj.className || !formObj.gradeName) {
+    return
+  }
+  const url = `/api/suggest/totalSuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
-    axios.get(url)
-      .then(res => {
-        if (res.code === 200) {
-          const map1 = {
-            ...res.ds_sxMapMsg,
-            ...ds_ssMapMsg
-          }
-          const arr = []
-          for (let key in map1) {
-            arr.push({
-              label: key,
-              value: map1[key]
-            })
-          }
-          mapMsg.value = arr
-          resolve(res)
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code === 200) {
+        const map1 = {
+          ...res.ds_sxMapMsg,
+          ...ds_ssMapMsg
         }
-        else {
-          reject(res)
+        const arr = []
+        for (let key in map1) {
+          arr.push({
+            label: key,
+            value: map1[key]
+          })
         }
-      })
-      .catch(reject)
+        mapMsg.value = arr
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
   )
 }
 const option1 = ref({
-  title: {
-    // text: 'Basic Radar Chart'
-  },
   legend: {
     data: ['Allocated Budget', 'Actual Spending']
   },
@@ -1032,10 +1184,10 @@ const changeGrage = () => {
           style="width: 150px;"
           v-model="formObj.kstime"
           placeholder="考试时间"
-          @change="getAllData()"
           clearable
+          @change="getAllData()"
         >
-          <el-option v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
+          <el-option  v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
       </el-form-item>
       <el-form-item label="上次考试时间">
@@ -1043,8 +1195,8 @@ const changeGrage = () => {
           style="width: 150px;"
           v-model="formObj.lastKstime"
           placeholder="上次考试时间"
-          @change="getAllData()"
           clearable
+          @change="getAllData()"
         >
           <el-option v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
@@ -1054,8 +1206,8 @@ const changeGrage = () => {
           style="width: 150px;"
           v-model="formObj.gradeName"
           placeholder="年级"
-          @change="changeGrage()"
           clearable
+          @change="changeGrage()"
         >
           <el-option v-for="item in gradeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
@@ -1065,14 +1217,17 @@ const changeGrage = () => {
           style="width: 150px;"
           v-model="formObj.className"
           placeholder="班级"
-          @change="getAllData()"
           clearable
+          @change="getAllData()"
         >
           <el-option v-for="item in classData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
       </el-form-item>
+      <el-form-item>
+        <el-button @click="getAllData()" type="primary">查询</el-button>
+      </el-form-item>
     </el-form>
-    <div class="echarts-block" v-if="juese === '学生'">
+    <div class="echarts-block" v-if="juese === 'student'">
       <h6>纵向分析</h6>
       <div class="echart-group">
         <v-chart :option="option1" ref="ref1" class="echart" />
@@ -1080,7 +1235,7 @@ const changeGrage = () => {
         <v-chart :option="option3" ref="ref3" class="echart" />
       </div>
     </div>
-    <div class="echarts-block" v-if="juese === '学生'">
+    <div class="echarts-block" v-if="juese === 'student'">
       <h6>横向分析</h6>
       <div class="echart-group">
         <el-card style="width: 300px; height: 300px;margin: auto 0;">
@@ -1103,7 +1258,7 @@ const changeGrage = () => {
         <v-chart :option="option5" ref="ref5" class="echart" />
       </div>
     </div>
-    <div class="echarts-block" v-if="juese === '老师'">
+    <div class="echarts-block" v-if="juese === 'teacher'">
       <h6>综合分析</h6>
       <div class="echart-group">
         <v-chart :option="option6" ref="ref6" class="echart" />
@@ -1112,10 +1267,10 @@ const changeGrage = () => {
         <v-chart :option="option9" ref="ref9" class="echart" />
       </div>
     </div>
-    <el-descriptions title="综合建议" border :label-width="90" :column="2" v-if="juese === '老师'">
+    <el-descriptions title="综合建议" border :label-width="90" :column="2" v-if="juese === 'teacher'">
       <el-descriptions-item :key="index + ''" v-for="(item, index) in mapMsg" :label="item.label">{{item.value}}</el-descriptions-item>
     </el-descriptions>
-    <el-descriptions title="个体建议" :column="3" border style="margin-top: 20px;" v-if="juese === '学生'">
+    <el-descriptions title="个体建议" :column="3" border style="margin-top: 20px;" v-if="juese === 'student'">
       <el-descriptions-item label="排名信息" >{{rankingMsg}}</el-descriptions-item>
       <el-descriptions-item :label="item.label" v-for="(item, index) in dispersionMsgMap" :key="index + ''">
         {{item.value}}
