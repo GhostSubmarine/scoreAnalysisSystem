@@ -107,6 +107,38 @@ const getKstime = () => {
     })
   )
 }
+//获取上次考试时间
+const getLastKstime = () => {
+  if (!formObj.kstime) {
+    return Promise.resolve('')
+  }
+  const url = `/api/data/getLastKstime?kstime=${formObj.kstime}`
+  return new Promise((resolve, reject) => 
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        kstimeData.value = res.data.data.map(val => ({
+          value: val,
+          label: val
+        }))
+        resolve(res)
+      }
+      else {
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      ElMessage(err)
+      reject(err)
+    })
+  )
+}
 //获取年级
 const getGrade = () => {
   const url = '/api/data/getGrade'
@@ -139,7 +171,7 @@ const getGrade = () => {
 //获取班级
 const getClass = () => {
   if (!formObj.gradeName) {
-    return 
+    return Promise.resolve('') 
   }
   const url = `/api/data/getClass?gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
@@ -182,6 +214,9 @@ const getRadar = () => {
       if (res.data.code == 200) {
         const max = Math.max(...res.data.data.map(obj => obj.value))
         option1.value = {
+          // legend: {
+          //   data: res.data.data.map(obj => obj.name)
+          // },
           radar: {
             indicator: res.data.data.map(obj => ({name: obj.name, max}))
           },
@@ -194,7 +229,6 @@ const getRadar = () => {
             }] 
           }]
         }
-        console.log(option1.value)
         resolve(res)
       }
       else {
@@ -247,7 +281,7 @@ const getSubscore = () => {
             text: subjects[idx]
           })
           singleAxis.push({
-            left: 150,
+            left: 60,
             type: 'category',
             boundaryGap: false,
             data: new Array(6).fill(1).map((_, idx) => `${idx * 20}`),
@@ -269,7 +303,9 @@ const getSubscore = () => {
         });
         // series
         option2.value = {
-          ...option2.value,
+          tooltip: {
+            position: 'top'
+          },
           title,
           singleAxis,
           series
@@ -300,10 +336,12 @@ const getScoreAnystage = () => {
     .then(res => {
       if (res.data.code == 200) {
         option3.value = {
-          ...option3.value,
           xAxis: {
             type: 'category',
             data: res.data.data.map(obj => obj.name)
+          },
+          yAxis: {
+            type: 'value'
           },
           series: [
             {
@@ -327,10 +365,10 @@ const getScoreAnystage = () => {
 }
 // 平均分/标准差分析法
 const getPassrate = () => {
-  if (!formObj.kstime || !formObj.className || !formObj.gradeName) {
-    return
+  if (!formObj.kstime || !formObj.className || !formObj.gradeName || !formObj.lastKstime) {
+    return Promise.resolve('')
   }
-  const url = `/api/achievementanalysis_stu/passrate?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
+  const url = `/api/achievementanalysis_stu/passrate?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}&lstime=${formObj.lastKstime}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
       headers: {
@@ -340,8 +378,8 @@ const getPassrate = () => {
     })
     .then(res => {
       if (res.data.code == 200) {
-        const avgForsubjectsomeonestudent = res.data.data.avgForsubjectsomeonestudent
-        const avgForTotalpointsAllstudent = res.data.data.avgForTotalpointsAllstudent
+        const avgForSubjectSomeoneStudent = res.data.data.avgForSubjectSomeoneStudent
+        const avgForTotalpointsAllStudent = res.data.data.avgForTotalpointsAllStudent
         const standardDeviationForTotalpointsAllStudentOneSubject = res.data.data.standardDeviationForTotalpointsAllStudentOneSubject
         avgForTotalpointsSomeoneStudent.value = res.data.data.avgForTotalpointsSomeoneStudent[0]       
         standardDeviationForTotalpointsAllStudent.value = res.data.data.standardDeviationForTotalpointsAllStudent
@@ -349,23 +387,23 @@ const getPassrate = () => {
         const xAxisData = []
         const data10 = []
         const data11 = []
-        for (let key in avgForsubjectsomeonestudent) {
+        for (let key in avgForSubjectSomeoneStudent) {
           data4.push({
             name: key,
-            value: avgForsubjectsomeonestudent[key]
+            value: avgForSubjectSomeoneStudent[key].toFixed(2)
           })
           xAxisData.push(key)
         }
-        for (let key in avgForTotalpointsAllstudent) {
+        for (let key in avgForTotalpointsAllStudent) {
           data10.push({
             name: key,
-            value: avgForTotalpointsAllstudent[key]
+            value: avgForTotalpointsAllStudent[key].toFixed(2)
           })
         }
         for (let key in standardDeviationForTotalpointsAllStudentOneSubject) {
           data11.push({
             name: key,
-            value: standardDeviationForTotalpointsAllStudentOneSubject[key]
+            value: standardDeviationForTotalpointsAllStudentOneSubject[key].toFixed(2)
           })
         }
         option4.value = {
@@ -374,12 +412,13 @@ const getPassrate = () => {
             type: 'category'
           },
           yAxis: {
-            type: 'value'
+            type: 'value',
+            max: 100
           },
           series: [
             {
               data: data4,
-              type: 'pie'
+              type: 'bar'
             }
           ]
         }
@@ -446,8 +485,8 @@ const getPassrate = () => {
 }
 // 成绩预测相关
 const getRegression = () => {
-  if (!formObj.gradeName || !formObj.className || formObj.kstime) {
-    return
+  if (!formObj.gradeName || !formObj.className || !formObj.kstime) {
+    return Promise.resolve('')
   }
   const url = `/api/achievementanalysis_stu/regression?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => {
@@ -462,9 +501,10 @@ const getRegression = () => {
         const data = res.data.data
         const seriesData = []
         const xAxisData = []
-        data.forEach((el, idx) => {
+        data.forEach((el) => {
           xAxisData.push(el.name)
-          el.scoresums.forEach(val => seriesData.push([idx, val]))
+          const arr = el.scoreSums
+          arr.forEach((val, idx) => seriesData.push([idx, val]))
         })
         option5.value = {
           dataset: [
@@ -496,7 +536,7 @@ const getRegression = () => {
               type: 'dashed'
             }
           },
-          data: xAxisData
+          // data: xAxisData
         },
         yAxis: {
           splitLine: {
@@ -618,7 +658,7 @@ const getClasspassrateForTeaBySex = () => {
 // 不同学科同一年级 及格率
 const getClasspassrateForTeaByScore = () => {
   if (!formObj.gradeName) {
-    return
+    return Promise.resolve('')
   }
   const url = `/api/achievementanalysis_tea/classpassrateForTeaByScore?gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
@@ -660,7 +700,7 @@ const getClasspassrateForTeaByScore = () => {
 // 按分数排名段分析：不同分数排名段，同一学期
 const getClasspassrateForTeaByScoreRange = () => {
   if (!formObj.kstime) {
-    return
+    return Promise.resolve('')
   }
   const url = `/api/achievementanalysis_tea/classpassrateForTeaByScoreRange?kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => 
@@ -702,7 +742,7 @@ const getClasspassrateForTeaByScoreRange = () => {
 // 个体建议
 const getEntitySuggest = () => {
   if (!formObj.kstime || !formObj.lastKstime || !formObj.className || !formObj.gradeName) {
-    return
+    return Promise.resolve('')
   }
   const url = `/api/suggest/entitySuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
@@ -742,7 +782,7 @@ const getEntitySuggest = () => {
 // 综合建议
 const getTotalSuggest = () => {
   if (!formObj.kstime || !formObj.lastKstime || !formObj.className || !formObj.gradeName) {
-    return
+    return Promise.resolve('')
   }
   const url = `/api/suggest/totalSuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
@@ -779,190 +819,195 @@ const getTotalSuggest = () => {
     })
   )
 }
-const option1 = ref({
-  legend: {
-    data: ['Allocated Budget', 'Actual Spending']
-  },
-  radar: {
-    // shape: 'circle',
-    indicator: [
-      { name: '数学', max: 18.723128893311493 },
-      { name: '英语', max: 18.723128893311493 },
-      { name: '生物', max: 18.723128893311493 },
-      { name: '历史', max: 18.723128893311493 },
-      { name: '地理', max: 18.723128893311493 },
-      { name: '语文', max: 18.723128893311493 },
-      { name: '政治', max: 18.723128893311493 }
-    ]
-  },
-  series: [
-    {
-      name: '7个学科',
-      type: 'radar',
-      data: [
-        {
-          value: [
-            8.137703743822469, 
-            10.714735440296954, 
-            8.301606270274847, 
-            16.72074559741082, 
-            11.437025642865175, 
-            18.723128893311493, 
-            15.660459763365825
-          ],
-          name: '一年级'
-        }
-      ]
-    }
-  ]
-})
-const option2 = ref({
-  tooltip: {
-    position: 'top'
-  },
-  title: ['语文', '数学', '英语', '政治', '地理', '历史', '生物']
-    .map((val, idx) => ({
-      textBaseline: 'middle',
-      top: ((idx + 0.5) * 100) / 7 + '%',
-      text: val
-    })),
-  singleAxis: ['语文', '数学', '英语', '政治', '地理', '历史', '生物']
-    .map((_, idx) => ({
-      left: 150,
-      type: 'category',
-      boundaryGap: false,
-      data: new Array(6).fill(1).map((_, idx) => `${idx * 20}`),
-      top: (idx * 100) / 7 + 5 + '%',
-      height: 100 / 7 - 10 + '%',
-      axisLabel: {
-        interval: 0
-      }
-    })),
-  series: ['语文', '数学', '英语', '政治', '地理', '历史', '生物']
-    .map((_, idx) => ({
-      singleAxisIndex: idx,
-      coordinateSystem: 'singleAxis',
-      type: 'scatter',
-      data: ['语文', '数学', '英语', '政治', '地理', '历史', '生物'].map((_, index) => [
-        index,
-        Math.random() * 100
-      ]),
-      symbolSize: function (dataItem) {
-        return dataItem[1] * 0.4;
-      }
-    }))
-  // title: title,
-  // singleAxis: singleAxis,
-  // series: series
-})
-const option3 = ref({
-  xAxis: {
-    type: 'category',
-    data: ['一年级', '二年级']
-  },
-  yAxis: {
-    type: 'value'
-  },
-  series: [
-    {
-      data: [{
-        name: '一年级',
-        value: 1829
-      },{
-        name: '二年级',
-        value: 1018
-      }],
-      type: 'line'
-    }
-  ]
-})
-const option4 = ref({
-  xAxis: {
-    type: 'category',
-    data: ['政治', '生物', '历史', '数学', '语文', '英语', '地理']
-  },
-  yAxis: {
-    type: 'value',
-    max: 100
-  },
-  series: [
-    {
-      data: [{value: 76, name: '政治'},
-      {value: 86, name: '生物'},
-      {value: 56, name: '历史'},
-      {value: 88, name: '数学'},
-      {value: 89, name: '语文'},
-      {value: 67, name: '英语'},
-      {value: 74, name: '地理'}],
-      type: 'bar'
-    }
-  ]
-})
-const option5 = ref({
-  dataset: [
-    {
-      source: [
-        [0, 473],
-        [1, 507],
-        [2, 367],
-        [3, 482],
-        [4, 536],
-        [5, 482]
-      ]
-    },
-    {
-      transform: {
-        type: 'ecStat:regression',
-        config: { method: 'polynomial', order: 3 }
-      }
-    }
-  ],
-  title: {
-    text: '成绩预测',
-    subtext: '',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'cross'
-    }
-  },
-  xAxis: {
-    // type: 'category',
-    splitLine: {
-      lineStyle: {
-        type: 'dashed'
-      }
-    },
-    // data: ['一年级', '二年级']
-  },
-  yAxis: {
-    splitLine: {
-      lineStyle: {
-        type: 'dashed'
-      }
-    }
-  },
-  series: [
-    {
-      name: 'scatter',
-      type: 'scatter',
-      datasetIndex: 0
-    },
-    {
-      name: 'line',
-      type: 'line',
-      smooth: true,
-      datasetIndex: 1,
-      symbolSize: 0.1,
-      symbol: 'circle',
-      label: { show: true, fontSize: 16 },
-      labelLayout: { dx: -20 },
-      encode: { label: 2, tooltip: 1 }
-    }
-  ]
-})
+const option1 = ref({})
+// const option1 = ref({
+//   legend: {
+//     data: ['Allocated Budget', 'Actual Spending']
+//   },
+//   radar: {
+//     // shape: 'circle',
+//     indicator: [
+//       { name: '数学', max: 18.723128893311493 },
+//       { name: '英语', max: 18.723128893311493 },
+//       { name: '生物', max: 18.723128893311493 },
+//       { name: '历史', max: 18.723128893311493 },
+//       { name: '地理', max: 18.723128893311493 },
+//       { name: '语文', max: 18.723128893311493 },
+//       { name: '政治', max: 18.723128893311493 }
+//     ]
+//   },
+//   series: [
+//     {
+//       name: '7个学科',
+//       type: 'radar',
+//       data: [
+//         {
+//           value: [
+//             8.137703743822469, 
+//             10.714735440296954, 
+//             8.301606270274847, 
+//             16.72074559741082, 
+//             11.437025642865175, 
+//             18.723128893311493, 
+//             15.660459763365825
+//           ],
+//           name: '一年级'
+//         }
+//       ]
+//     }
+//   ]
+// })
+const option2 = ref({})
+// const option2 = ref({
+//   tooltip: {
+//     position: 'top'
+//   },
+//   title: ['语文', '数学', '英语', '政治', '地理', '历史', '生物']
+//     .map((val, idx) => ({
+//       textBaseline: 'middle',
+//       top: ((idx + 0.5) * 100) / 7 + '%',
+//       text: val
+//     })),
+//   singleAxis: ['语文', '数学', '英语', '政治', '地理', '历史', '生物']
+//     .map((_, idx) => ({
+//       left: 150,
+//       type: 'category',
+//       boundaryGap: false,
+//       data: new Array(6).fill(1).map((_, idx) => `${idx * 20}`),
+//       top: (idx * 100) / 7 + 5 + '%',
+//       height: 100 / 7 - 10 + '%',
+//       axisLabel: {
+//         interval: 0
+//       }
+//     })),
+//   series: ['语文', '数学', '英语', '政治', '地理', '历史', '生物']
+//     .map((_, idx) => ({
+//       singleAxisIndex: idx,
+//       coordinateSystem: 'singleAxis',
+//       type: 'scatter',
+//       data: ['语文', '数学', '英语', '政治', '地理', '历史', '生物'].map((_, index) => [
+//         index,
+//         Math.random() * 100
+//       ]),
+//       symbolSize: function (dataItem) {
+//         return dataItem[1] * 0.4;
+//       }
+//     }))
+//   // title: title,
+//   // singleAxis: singleAxis,
+//   // series: series
+// })
+const option3 = ref({})
+// const option3 = ref({
+//   xAxis: {
+//     type: 'category',
+//     data: ['一年级', '二年级']
+//   },
+//   yAxis: {
+//     type: 'value'
+//   },
+//   series: [
+//     {
+//       data: [{
+//         name: '一年级',
+//         value: 1829
+//       },{
+//         name: '二年级',
+//         value: 1018
+//       }],
+//       type: 'line'
+//     }
+//   ]
+// })
+const option4 = ref({})
+// const option4 = ref({
+//   xAxis: {
+//     type: 'category',
+//     data: ['政治', '生物', '历史', '数学', '语文', '英语', '地理']
+//   },
+//   yAxis: {
+//     type: 'value',
+//     max: 100
+//   },
+//   series: [
+//     {
+//       data: [{value: 76, name: '政治'},
+//       {value: 86, name: '生物'},
+//       {value: 56, name: '历史'},
+//       {value: 88, name: '数学'},
+//       {value: 89, name: '语文'},
+//       {value: 67, name: '英语'},
+//       {value: 74, name: '地理'}],
+//       type: 'bar'
+//     }
+//   ]
+// })
+const option5 = ref({})
+// const option5 = ref({
+//   dataset: [
+//     {
+//       source: [
+//         [0, 473],
+//         [1, 507],
+//         [2, 367],
+//         [3, 482],
+//         [4, 536],
+//         [5, 482]
+//       ]
+//     },
+//     {
+//       transform: {
+//         type: 'ecStat:regression',
+//         config: { method: 'polynomial', order: 3 }
+//       }
+//     }
+//   ],
+//   title: {
+//     text: '成绩预测',
+//     subtext: '',
+//     left: 'center'
+//   },
+//   tooltip: {
+//     trigger: 'axis',
+//     axisPointer: {
+//       type: 'cross'
+//     }
+//   },
+//   xAxis: {
+//     // type: 'category',
+//     splitLine: {
+//       lineStyle: {
+//         type: 'dashed'
+//       }
+//     },
+//     // data: ['一年级', '二年级']
+//   },
+//   yAxis: {
+//     splitLine: {
+//       lineStyle: {
+//         type: 'dashed'
+//       }
+//     }
+//   },
+//   series: [
+//     {
+//       name: 'scatter',
+//       type: 'scatter',
+//       datasetIndex: 0
+//     },
+//     {
+//       name: 'line',
+//       type: 'line',
+//       smooth: true,
+//       datasetIndex: 1,
+//       symbolSize: 0.1,
+//       symbol: 'circle',
+//       label: { show: true, fontSize: 16 },
+//       labelLayout: { dx: -20 },
+//       encode: { label: 2, tooltip: 1 }
+//     }
+//   ]
+// })
 const option6 = ref({
   title: {
     text: '相同年级 学科分析 及格率',
@@ -1077,68 +1122,70 @@ const option9 = ref({
     }
   ]
 })
-const option10 = ref({
-  title: {
-    text: '所有人总成绩平均分',
-    left: 'center',
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '分数',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { name: '1520000', value: 50.2 },
-        { name: '150030222', value: 60.1 },
-        { name: '150239293', value: 72 },
-        { name: '151111111', value: 57 },
-        { name: '1511111112', value: 59 },
-        { name: '1511111343', value: 60.2 }
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
-const option11 = ref({
-  title: {
-    text: '所有学生单科成绩标准差',
-    left: 'center',
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '分数',
-      type: 'pie',
-      radius: '50%',
-      data: [{value: 11.4406, name: '政治'},
-        {value: 17.714, name: '生物'},
-        {value: 15.66, name: '历史'},
-        {value: 10.54224, name: '数学'},
-        {value: 9.877011, name: '语文'},
-        {value: 17.234243424, name: '英语'},
-        {value: 10.234213443, name: '地理'},
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
+const option10 = ref({})
+// const option10 = ref({
+//   title: {
+//     text: '所有人总成绩平均分',
+//     left: 'center',
+//   },
+//   tooltip: {
+//     trigger: 'item'
+//   },
+//   series: [
+//     {
+//       name: '分数',
+//       type: 'pie',
+//       radius: '50%',
+//       data: [
+//         { name: '1520000', value: 50.2 },
+//         { name: '150030222', value: 60.1 },
+//         { name: '150239293', value: 72 },
+//         { name: '151111111', value: 57 },
+//         { name: '1511111112', value: 59 },
+//         { name: '1511111343', value: 60.2 }
+//       ],
+//       emphasis: {
+//         itemStyle: {
+//           shadowBlur: 10,
+//           shadowOffsetX: 0,
+//           shadowColor: 'rgba(0, 0, 0, 0.5)'
+//         }
+//       }
+//     }
+//   ]
+// })
+const option11 = ref({})
+// const option11 = ref({
+//   title: {
+//     text: '所有学生单科成绩标准差',
+//     left: 'center',
+//   },
+//   tooltip: {
+//     trigger: 'item'
+//   },
+//   series: [
+//     {
+//       name: '分数',
+//       type: 'pie',
+//       radius: '50%',
+//       data: [{value: 11.4406, name: '政治'},
+//         {value: 17.714, name: '生物'},
+//         {value: 15.66, name: '历史'},
+//         {value: 10.54224, name: '数学'},
+//         {value: 9.877011, name: '语文'},
+//         {value: 17.234243424, name: '英语'},
+//         {value: 10.234213443, name: '地理'},
+//       ],
+//       emphasis: {
+//         itemStyle: {
+//           shadowBlur: 10,
+//           shadowOffsetX: 0,
+//           shadowColor: 'rgba(0, 0, 0, 0.5)'
+//         }
+//       }
+//     }
+//   ]
+// })
 const option12 = ref({
   title: {
     text: '所有人总成绩平均分',
@@ -1186,7 +1233,7 @@ const changeGrage = () => {
           v-model="formObj.kstime"
           placeholder="考试时间"
           clearable
-          @change="getAllData()"
+          @change="getLastKstime()"
         >
           <el-option  v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
@@ -1197,7 +1244,6 @@ const changeGrage = () => {
           v-model="formObj.lastKstime"
           placeholder="上次考试时间"
           clearable
-          @change="getAllData()"
         >
           <el-option v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
@@ -1219,7 +1265,6 @@ const changeGrage = () => {
           v-model="formObj.className"
           placeholder="班级"
           clearable
-          @change="getAllData()"
         >
           <el-option v-for="item in classData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>

@@ -15,68 +15,69 @@ const rules = reactive({
     { min: 3, max: 5, message: 'Length should be 3 to 5', trigger: 'blur' },
   ]
 })
-const tableData = ref([
-  {
-    '学生号': (Math.random() * 10000).toFixed(0),
-    '语文': (Math.random() * 100).toFixed(0),
-    '数学': (Math.random() * 100).toFixed(0),
-    '英语': (Math.random() * 100).toFixed(0),
-    '政治': (Math.random() * 100).toFixed(0),
-    '地理': (Math.random() * 100).toFixed(0),
-    '生物': (Math.random() * 100).toFixed(0),
-    '历史': (Math.random() * 100).toFixed(0)
-  },
-  {
-    '学生号': (Math.random() * 10000).toFixed(0),
-    '语文': (Math.random() * 100).toFixed(0),
-    '数学': (Math.random() * 100).toFixed(0),
-    '英语': (Math.random() * 100).toFixed(0),
-    '政治': (Math.random() * 100).toFixed(0),
-    '地理': (Math.random() * 100).toFixed(0),
-    '生物': (Math.random() * 100).toFixed(0),
-    '历史': (Math.random() * 100).toFixed(0)
-  },
-  {
-    '学生号': (Math.random() * 10000).toFixed(0),
-    '语文': (Math.random() * 100).toFixed(0),
-    '数学': (Math.random() * 100).toFixed(0),
-    '英语': (Math.random() * 100).toFixed(0),
-    '政治': (Math.random() * 100).toFixed(0),
-    '地理': (Math.random() * 100).toFixed(0),
-    '生物': (Math.random() * 100).toFixed(0),
-    '历史': (Math.random() * 100).toFixed(0)
-  },
-  {
-    '学生号': (Math.random() * 10000).toFixed(0),
-    '语文': (Math.random() * 100).toFixed(0),
-    '数学': (Math.random() * 100).toFixed(0),
-    '英语': (Math.random() * 100).toFixed(0),
-    '政治': (Math.random() * 100).toFixed(0),
-    '地理': (Math.random() * 100).toFixed(0),
-    '生物': (Math.random() * 100).toFixed(0),
-    '历史': (Math.random() * 100).toFixed(0)
-  },
-  {
-    '学生号': (Math.random() * 10000).toFixed(0),
-    '语文': (Math.random() * 100).toFixed(0),
-    '数学': (Math.random() * 100).toFixed(0),
-    '英语': (Math.random() * 100).toFixed(0),
-    '政治': (Math.random() * 100).toFixed(0),
-    '地理': (Math.random() * 100).toFixed(0),
-    '生物': (Math.random() * 100).toFixed(0),
-    '历史': (Math.random() * 100).toFixed(0)
-  },
-  {
-    '学生号': (Math.random() * 10000).toFixed(0),
-    '语文': (Math.random() * 100).toFixed(0),
-    '数学': (Math.random() * 100).toFixed(0),
-    '英语': (Math.random() * 100).toFixed(0),
-    '政治': (Math.random() * 100).toFixed(0),
-    '地理': (Math.random() * 100).toFixed(0),
-    '生物': (Math.random() * 100).toFixed(0),
-    '历史': (Math.random() * 100).toFixed(0)
-  }
-])
+const tableData = ref([])
+// const tableData = ref([
+//   {
+//     '学生号': (Math.random() * 10000).toFixed(0),
+//     '语文': (Math.random() * 100).toFixed(0),
+//     '数学': (Math.random() * 100).toFixed(0),
+//     '英语': (Math.random() * 100).toFixed(0),
+//     '政治': (Math.random() * 100).toFixed(0),
+//     '地理': (Math.random() * 100).toFixed(0),
+//     '生物': (Math.random() * 100).toFixed(0),
+//     '历史': (Math.random() * 100).toFixed(0)
+//   },
+//   {
+//     '学生号': (Math.random() * 10000).toFixed(0),
+//     '语文': (Math.random() * 100).toFixed(0),
+//     '数学': (Math.random() * 100).toFixed(0),
+//     '英语': (Math.random() * 100).toFixed(0),
+//     '政治': (Math.random() * 100).toFixed(0),
+//     '地理': (Math.random() * 100).toFixed(0),
+//     '生物': (Math.random() * 100).toFixed(0),
+//     '历史': (Math.random() * 100).toFixed(0)
+//   },
+//   {
+//     '学生号': (Math.random() * 10000).toFixed(0),
+//     '语文': (Math.random() * 100).toFixed(0),
+//     '数学': (Math.random() * 100).toFixed(0),
+//     '英语': (Math.random() * 100).toFixed(0),
+//     '政治': (Math.random() * 100).toFixed(0),
+//     '地理': (Math.random() * 100).toFixed(0),
+//     '生物': (Math.random() * 100).toFixed(0),
+//     '历史': (Math.random() * 100).toFixed(0)
+//   },
+//   {
+//     '学生号': (Math.random() * 10000).toFixed(0),
+//     '语文': (Math.random() * 100).toFixed(0),
+//     '数学': (Math.random() * 100).toFixed(0),
+//     '英语': (Math.random() * 100).toFixed(0),
+//     '政治': (Math.random() * 100).toFixed(0),
+//     '地理': (Math.random() * 100).toFixed(0),
+//     '生物': (Math.random() * 100).toFixed(0),
+//     '历史': (Math.random() * 100).toFixed(0)
+//   },
+//   {
+//     '学生号': (Math.random() * 10000).toFixed(0),
+//     '语文': (Math.random() * 100).toFixed(0),
+//     '数学': (Math.random() * 100).toFixed(0),
+//     '英语': (Math.random() * 100).toFixed(0),
+//     '政治': (Math.random() * 100).toFixed(0),
+//     '地理': (Math.random() * 100).toFixed(0),
+//     '生物': (Math.random() * 100).toFixed(0),
+//     '历史': (Math.random() * 100).toFixed(0)
+//   },
+//   {
+//     '学生号': (Math.random() * 10000).toFixed(0),
+//     '语文': (Math.random() * 100).toFixed(0),
+//     '数学': (Math.random() * 100).toFixed(0),
+//     '英语': (Math.random() * 100).toFixed(0),
+//     '政治': (Math.random() * 100).toFixed(0),
+//     '地理': (Math.random() * 100).toFixed(0),
+//     '生物': (Math.random() * 100).toFixed(0),
+//     '历史': (Math.random() * 100).toFixed(0)
+//   }
+// ])
 const formObj = reactive({
   gradeName: '',
   className: ''
@@ -444,6 +445,7 @@ const handleClose = (done) => {
     </el-space>
     <el-table :data="tableData" stripe style="width: 100%" v-if="tableData.length > 0">
       <el-table-column prop="学生号" label="学生号"  />
+      <el-table-column prop="考试时间" label="考试时间"  />
       <el-table-column prop="语文" label="语文"  />
       <el-table-column prop="数学" label="数学"  />
       <el-table-column prop="英语"  label="英语" />

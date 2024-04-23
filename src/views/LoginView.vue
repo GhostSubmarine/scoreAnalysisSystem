@@ -28,28 +28,28 @@ const loginIn = () => {
       'Content-Type': 'application/json'
     }
   })
-    .then(res => {
-      if (res.data.code === 200) {
-        ElMessage(res.data.msg)
-        window.sessionStorage.setItem('juese', res.data.data.juese)
-        window.sessionStorage.setItem('jsid', res.data.data.jsid)
-        if (res.data.data.juese === '管理员') {
-          router.push({
-            path: '/main/MessageManager'
-          })
-        }
-        else {
-          router.push({
-            path: '/main/dataAnalysisSystem'
-          })
-        }
-        
+  .then(res => {
+    if (res.data.code === 200) {
+      ElMessage(res.data.msg)
+      window.sessionStorage.setItem('juese', res.data.data.juese)
+      window.sessionStorage.setItem('jsid', res.data.data.jsid)
+      if (res.data.data.juese === '管理员') {
+        router.push({
+          path: '/main/MessageManager'
+        })
       }
       else {
-        ElMessage(res.data.msg)
+        router.push({
+          path: '/main/dataAnalysisSystem'
+        })
       }
-    })
-    .catch(err => ElMessage(err.data.msg))
+      
+    }
+    else {
+      ElMessage(res.data.msg)
+    }
+  })
+  .catch(err => ElMessage(err))
 }
 const submit = (loginForm) => {
   loginForm.validate((valid, field) => {
