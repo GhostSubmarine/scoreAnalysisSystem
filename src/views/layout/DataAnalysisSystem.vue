@@ -48,7 +48,7 @@ const getAllData = () => {
     text: '数据请求中',
     background: 'rgba(0, 0, 0, 0.7)',
   })
-  if (juese === 'teacher') {
+  if (juese === 'student') {
     Promise.all([
       getRadar(), 
       getSubscore(), 
@@ -138,6 +138,9 @@ const getGrade = () => {
 }
 //获取班级
 const getClass = () => {
+  if (!formObj.gradeName) {
+    return 
+  }
   const url = `/api/data/getClass?gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -177,14 +180,21 @@ const getRadar = () => {
     })
     .then(res => {
       if (res.data.code == 200) {
-        const max = Math.max(res.data.data.map(obj => obj.value))
+        const max = Math.max(...res.data.data.map(obj => obj.value))
         option1.value = {
-          ...option1.value,
           radar: {
             indicator: res.data.data.map(obj => ({name: obj.name, max}))
           },
-          series: res.data.data
+          series: [{
+            name: '7个学科',
+            type: 'radar',
+            data: [{
+              value: res.data.data.map(obj => obj.value),
+              name: '年级'
+            }] 
+          }]
         }
+        console.log(option1.value)
         resolve(res)
       }
       else {
@@ -214,7 +224,6 @@ const getSubscore = () => {
         const title = []
         const singleAxis = []
         const series = []
-        const scores = new Array(6).fill(1).map((_, idx) => `${idx * 20}`)
         const subjects = data.map(obj => obj.name)
         const seriesData = []
         data.forEach((el, idx) => {
@@ -223,10 +232,10 @@ const getSubscore = () => {
           for (let i = 0; i <= 5; i++) {
             let length
             if (i === 5) {
-              length = values.filter(val => val <= (i + 1) * 20 && val >= i * 20)
+              length = values.filter(val => val <= (i + 1) * 20 && val >= i * 20).length
             }
             else {
-              length = values.filter(val => val < (i + 1) * 20 && val >= i * 20)
+              length = values.filter(val => val < (i + 1) * 20 && val >= i * 20).length
             }
             seriesData[idx].push([i, length])
           }
@@ -235,18 +244,17 @@ const getSubscore = () => {
           title.push({
             textBaseline: 'middle',
             top: ((idx + 0.5) * 100) / 7 + '%',
-            text: subjects,
-            left: 0
+            text: subjects[idx]
           })
           singleAxis.push({
             left: 150,
             type: 'category',
             boundaryGap: false,
-            data: scores,
+            data: new Array(6).fill(1).map((_, idx) => `${idx * 20}`),
             top: (idx * 100) / 7 + 5 + '%',
             height: 100 / 7 - 10 + '%',
             axisLabel: {
-              interval: 2
+              interval: 0
             }
           })
           series.push({
@@ -261,7 +269,10 @@ const getSubscore = () => {
         });
         // series
         option2.value = {
-          ...option2.value
+          ...option2.value,
+          title,
+          singleAxis,
+          series
         }
         resolve(res)
       }
@@ -288,7 +299,7 @@ const getScoreAnystage = () => {
     })
     .then(res => {
       if (res.data.code == 200) {
-        option1.value = {
+        option3.value = {
           ...option3.value,
           xAxis: {
             type: 'category',
@@ -316,6 +327,9 @@ const getScoreAnystage = () => {
 }
 // 平均分/标准差分析法
 const getPassrate = () => {
+  if (!formObj.kstime || !formObj.className || !formObj.gradeName) {
+    return
+  }
   const url = `/api/achievementanalysis_stu/passrate?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -329,7 +343,7 @@ const getPassrate = () => {
         const avgForsubjectsomeonestudent = res.data.data.avgForsubjectsomeonestudent
         const avgForTotalpointsAllstudent = res.data.data.avgForTotalpointsAllstudent
         const standardDeviationForTotalpointsAllStudentOneSubject = res.data.data.standardDeviationForTotalpointsAllStudentOneSubject
-        avgForTotalpointsSomeoneStudent.value = res.data.data.avgForTotalpointsSomeoneStudent
+        avgForTotalpointsSomeoneStudent.value = res.data.data.avgForTotalpointsSomeoneStudent[0]       
         standardDeviationForTotalpointsAllStudent.value = res.data.data.standardDeviationForTotalpointsAllStudent
         const data4 = []
         const xAxisData = []
@@ -432,6 +446,9 @@ const getPassrate = () => {
 }
 // 成绩预测相关
 const getRegression = () => {
+  if (!formObj.gradeName || !formObj.className || formObj.kstime) {
+    return
+  }
   const url = `/api/achievementanalysis_stu/regression?jsid=${jsid}&gradeName=${formObj.gradeName}&className=${formObj.className}&kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => {
     axios.get(url, {
@@ -600,6 +617,9 @@ const getClasspassrateForTeaBySex = () => {
 }
 // 不同学科同一年级 及格率
 const getClasspassrateForTeaByScore = () => {
+  if (!formObj.gradeName) {
+    return
+  }
   const url = `/api/achievementanalysis_tea/classpassrateForTeaByScore?gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -639,6 +659,9 @@ const getClasspassrateForTeaByScore = () => {
 }
 // 按分数排名段分析：不同分数排名段，同一学期
 const getClasspassrateForTeaByScoreRange = () => {
+  if (!formObj.kstime) {
+    return
+  }
   const url = `/api/achievementanalysis_tea/classpassrateForTeaByScoreRange?kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -678,6 +701,9 @@ const getClasspassrateForTeaByScoreRange = () => {
 }
 // 个体建议
 const getEntitySuggest = () => {
+  if (!formObj.kstime || !formObj.lastKstime || !formObj.className || !formObj.gradeName) {
+    return
+  }
   const url = `/api/suggest/entitySuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -715,6 +741,9 @@ const getEntitySuggest = () => {
 }
 // 综合建议
 const getTotalSuggest = () => {
+  if (!formObj.kstime || !formObj.lastKstime || !formObj.className || !formObj.gradeName) {
+    return
+  }
   const url = `/api/suggest/totalSuggest?kstime=${formObj.kstime}&lastKstime=${formObj.lastKstime}&className=${formObj.className}&gradeName=${formObj.gradeName}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -751,9 +780,6 @@ const getTotalSuggest = () => {
   )
 }
 const option1 = ref({
-  title: {
-    // text: 'Basic Radar Chart'
-  },
   legend: {
     data: ['Allocated Budget', 'Actual Spending']
   },
@@ -1145,6 +1171,7 @@ const option12 = ref({
   ]
 })
 const changeGrage = () => {
+  formObj.className = ''
   getClass()
   getAllData()
 }

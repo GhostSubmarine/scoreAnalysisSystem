@@ -82,7 +82,18 @@ const formObj = reactive({
   className: ''
 })
 onMounted(() => {
-  getAllData()
+  const loading = ElLoading.service({
+    lock: true,
+    text: '数据请求中',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+  Promise.all([
+    getGrade(),
+    getKstime()
+  ])
+  .finally(() => {
+    loading.close()
+  })
 })
 //获取考试时间
 const getKstime = () => {
@@ -183,7 +194,7 @@ const selectscorebystu = () => {
     })
       .then(res => {
         if (res.data.code == 200) {
-          this.tableData = res.data.data
+          tableData.value = res.data.data
           resolve(res)
         }
         else {
@@ -191,7 +202,7 @@ const selectscorebystu = () => {
         }
       })
       .catch(err => {
-        ElMessage(err.data.msg)
+        ElMessage(err)
         reject(err)
       })
   )
@@ -252,7 +263,7 @@ const selectscoreall = () => {
         }
       })
       .catch(err => {
-        ElMessage(err.data.msg)
+        ElMessage(err)
         reject(err)
       })
   )
@@ -304,7 +315,7 @@ const myscore = () => {
         }
       })
       .catch(err => {
-        ElMessage(err.data.msg)
+        ElMessage(err)
         reject(err)
       })
   )
@@ -321,6 +332,7 @@ const myscoreByclassandgrade = () => {
     })
     .then(res => {
       if (res.data.code == 200) {
+        tableData.value = res.data.data
         resolve(res)
       }
       else {
@@ -342,8 +354,7 @@ const getAllData = () => {
   })
   if (juese === 'teacher') {
     Promise.all([
-      getGrade(),
-      getKstime()
+      selectscorebystu()
     ])
     .finally(() => {
       loading.close()
@@ -351,8 +362,7 @@ const getAllData = () => {
   }
   else {
     Promise.all([
-      getGrade(),
-      getKstime()
+      myscoreByclassandgrade()
     ])
     .finally(() => {
       loading.close()
@@ -364,8 +374,18 @@ const handleChange = (uploadFile) => {
   fileload(uploadFile)
 }
 const changeGrage = () => {
-  getClass()
-  getAllData()
+  const loading = ElLoading.service({
+    lock: true,
+    text: '数据请求中',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+  formObj.className = ''
+  Promise.all([
+    getClass()
+  ])
+  .finally(() => {
+    loading.close()
+  })
 }
 const showForm = () => {
   dialogVisible.value = true
@@ -400,7 +420,6 @@ const handleClose = (done) => {
           v-model="formObj.className"
           placeholder="班级"
           clearable
-          @change="getAllData()"
         >
           <el-option v-for="item in classData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
@@ -425,13 +444,13 @@ const handleClose = (done) => {
     </el-space>
     <el-table :data="tableData" stripe style="width: 100%" v-if="tableData.length > 0">
       <el-table-column prop="学生号" label="学生号"  />
-      <el-table-column prop="英语" label="英语"  />
+      <el-table-column prop="语文" label="语文"  />
       <el-table-column prop="数学" label="数学"  />
-      <el-table-column prop="语文"  label="语文" />
-      <el-table-column prop="政治"  label="政治" />
-      <el-table-column prop="生物"  label="生物" />
+      <el-table-column prop="英语"  label="英语" />
       <el-table-column prop="历史"  label="历史" />
       <el-table-column prop="地理"  label="地理" />
+      <el-table-column prop="生物"  label="生物" />
+      <el-table-column prop="政治"  label="政治" />
     </el-table>
     <el-empty description="暂无数据" v-else />
     <el-dialog
