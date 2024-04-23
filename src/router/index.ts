@@ -40,7 +40,7 @@ const router = createRouter({
   ]
 })
 router.beforeEach(async (to, from) => {
-  // const userInfo = window.sessionStorage.getItem('userInfo')
-  // if (to.fullPath !== '/' && !userInfo) return '/'
+  const juese = window.sessionStorage.getItem('juese')
+  if (to.fullPath !== '/' && !juese) return '/'
 })
 export default router
