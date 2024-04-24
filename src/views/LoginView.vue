@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus'
 const router = useRouter()
 const loginForm = ref()
+const loading = ref(false)
 const rules = reactive({
   phone: [
     { required: true, message: '请输入手机号！', trigger: 'blur' }
@@ -19,6 +20,7 @@ const formObj = reactive({
 })
 //登录
 const loginIn = () => {
+  loading.value = true
   const url = '/api/login/login-in'
   const params = {
     ...formObj
@@ -33,7 +35,7 @@ const loginIn = () => {
       ElMessage(res.data.msg)
       window.sessionStorage.setItem('juese', res.data.data.juese)
       window.sessionStorage.setItem('jsid', res.data.data.jsid)
-      if (res.data.data.juese === '管理员') {
+      if (res.data.data.juese === 'admin') {
         router.push({
           path: '/main/MessageManager'
         })
@@ -50,6 +52,7 @@ const loginIn = () => {
     }
   })
   .catch(err => ElMessage(err))
+  .finally(() => loading.value = false)
 }
 const submit = (loginForm) => {
   loginForm.validate((valid, field) => {
@@ -97,7 +100,7 @@ const submit = (loginForm) => {
         </el-form-item>
         <el-form-item>
           <!-- <el-button type="primary" @click="submitForm(formRef)">Submit</el-button> -->
-          <el-button @click="submit(loginForm)" style="margin: 0 auto;">登录</el-button>
+          <el-button @click="submit(loginForm)" style="margin: 0 auto;" :loading="loading">登录</el-button>
         </el-form-item>
       </el-form>
     </el-card>

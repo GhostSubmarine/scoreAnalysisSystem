@@ -8,41 +8,23 @@ echarts.registerTransform(ecStat.transform.regression)
 const juese = window.sessionStorage.getItem('juese')
 const jsid = window.sessionStorage.getItem('jsid')
 const kstimeData = ref([])
+const lastKstimeData = ref([])
 const gradeData = ref([])
 const classData = ref([])
-const rankingMsg = ref('本次考试与上次考试成绩排名相比上升了2名')
-const dispersionMsgMap = ref([
-  {label: '政治', value: '本次考试高于班级平均水平:1.144'},
-  {label: '生物', value: '本次考试高于班级平均水平:1.771'},
-  {label: '历史', value: '本次考试高于班级平均水平:1.566'},
-  {label: '数学', value: '本次考试高于班级平均水平:1.054'},
-  {label: '语文', value: '本次考试高于班级平均水平:0.988'},
-  {label: '英语', value: '本次考试高于班级平均水平:1.727'},
-  {label: '地理', value: '本次考试高于班级平均水平:1.034'}
-])
-const stability = reactive({
-  "unstabilizationsubjectName": "历史",
-  "stabilizationsubiectame": "政治"
-})
-const mapMsg = reactive([
-  {label: "女", value: "女性别学生及格比例偏高，暂无需关注"},
-  {label: "男", value: "男性别学生及格比例偏低，需特别关注，及时采取应对措施"},
-  {label: "后优生", value: "后优生阶段学生及格率偏低，需特别关注，及时采取应对措施"},
-  {label: "中等生", value: "中等生阶段学生及格率偏低，需特别关注，及时采取应对措施"},
-  {label: "优生", value: "优生阶段学生及格率偏低，需特别关注，及时采取应对措施"}
-])
-const avgForTotalpointsSomeoneStudent = ref(78)
-const standardDeviationForTotalpointsAllStudent = ref(67.011)
+const rankingMsg = ref('')
+const dispersionMsgMap = ref([])
+const stability = ref({})
+const mapMsg = ref([])
+const avgForTotalpointsSomeoneStudent = ref(0)
+const standardDeviationForTotalpointsAllStudent = ref(0)
+const avgForTotalpointsAllStudent = ref(0)
 const formObj = reactive({
   gradeName: '',
   lastKstime: '',
   kstime: '',
   className: ''
 })
-onMounted(() => {
-  getAllData()
-})
-const getAllData = () => {
+onMounted(async () => {
   const loading = ElLoading.service({
     lock: true,
     text: '数据请求中',
@@ -64,14 +46,51 @@ const getAllData = () => {
     })
   }
   else {
+    try {
+      await getClassGradeForTea()
+      Promise.all([
+        getClasspassrateForTea(), 
+        getClasspassrateForTeaBySex(), 
+        getClasspassrateForTeaByScore(), 
+        getClasspassrateForTeaByScoreRange(), 
+        getTotalSuggest(),
+        getKstime()
+      ])
+      .finally(() => {
+        loading.close()
+      })
+    }
+    catch(e) {
+      loading.close()
+    }
+  }
+})
+const getAllData = () => {
+  const loading = ElLoading.service({
+    lock: true,
+    text: '数据请求中',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+  if (juese === 'student') {
+    Promise.all([
+      getRadar(), 
+      getSubscore(), 
+      getScoreAnystage(), 
+      getPassrate(), 
+      getRegression(), 
+      getEntitySuggest()
+    ])
+    .finally(() => {
+      loading.close()
+    })
+  }
+  else {
     Promise.all([
       getClasspassrateForTea(), 
       getClasspassrateForTeaBySex(), 
       getClasspassrateForTeaByScore(), 
       getClasspassrateForTeaByScoreRange(), 
-      getTotalSuggest(),
-      getKstime(),
-      getGrade()
+      getTotalSuggest()
     ])
     .finally(() => {
       loading.close()
@@ -96,6 +115,11 @@ const getKstime = () => {
         }))
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
         ElMessage(res.data.msg)
         reject(res)
@@ -112,6 +136,7 @@ const getLastKstime = () => {
   if (!formObj.kstime) {
     return Promise.resolve('')
   }
+  formObj.lastKstime = ''
   const url = `/api/data/getLastKstime?kstime=${formObj.kstime}`
   return new Promise((resolve, reject) => 
     axios.get(url, {
@@ -122,11 +147,50 @@ const getLastKstime = () => {
     })
     .then(res => {
       if (res.data.code == 200) {
-        kstimeData.value = res.data.data.map(val => ({
+        lastKstimeData.value = res.data.data.map(val => ({
           value: val,
           label: val
         }))
         resolve(res)
+      }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
+      else {
+        lastKstimeData.value = []
+        ElMessage(res.data.msg)
+        reject(res)
+      }
+    })
+    .catch(err => {
+      lastKstimeData.value = []
+      ElMessage(err)
+      reject(err)
+    })
+  )
+}
+//老师获取班级
+const getClassGradeForTea = () => {
+  const url = `/api/data/getClassGradeForTea`
+  return new Promise((resolve, reject) => 
+    axios.get(url, {
+      headers: {
+        juese,
+        jsid
+      }
+    })
+    .then(res => {
+      if (res.data.code == 200) {
+        formObj.gradeName = res.data.data.gradeName
+        formObj.className = res.data.data.className
+        resolve(res)
+      }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
       }
       else {
         ElMessage(res.data.msg)
@@ -156,6 +220,11 @@ const getGrade = () => {
           label: val
         }))
         resolve(res)
+      }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
       }
       else {
         ElMessage(res.data.msg)
@@ -189,12 +258,19 @@ const getClass = () => {
         }))
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        classData.value = []
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      classData.value = []
       ElMessage(err)
       reject(err)
     })
@@ -231,6 +307,11 @@ const getRadar = () => {
         }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
         ElMessage(res.data.msg)
         reject(res)
@@ -263,13 +344,13 @@ const getSubscore = () => {
         data.forEach((el, idx) => {
           !seriesData[idx] && (seriesData[idx] = [])
           const values = el.value
-          for (let i = 0; i <= 5; i++) {
+          for (let i = 0; i <= 10; i++) {
             let length
-            if (i === 5) {
-              length = values.filter(val => val <= (i + 1) * 20 && val >= i * 20).length
+            if (i === 10) {
+              length = values.filter(val => val <= (i + 1) * 10 && val >= i * 10).length
             }
             else {
-              length = values.filter(val => val < (i + 1) * 20 && val >= i * 20).length
+              length = values.filter(val => val < (i + 1) * 10 && val >= i * 10).length
             }
             seriesData[idx].push([i, length])
           }
@@ -284,7 +365,7 @@ const getSubscore = () => {
             left: 60,
             type: 'category',
             boundaryGap: false,
-            data: new Array(6).fill(1).map((_, idx) => `${idx * 20}`),
+            data: new Array(11).fill(1).map((_, idx) => `${idx * 10}`),
             top: (idx * 100) / 7 + 5 + '%',
             height: 100 / 7 - 10 + '%',
             axisLabel: {
@@ -311,6 +392,11 @@ const getSubscore = () => {
           series
         }
         resolve(res)
+      }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
       }
       else {
         ElMessage(res.data.msg)
@@ -352,6 +438,11 @@ const getScoreAnystage = () => {
         }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
         ElMessage(res.data.msg)
         reject(res)
@@ -379,27 +470,34 @@ const getPassrate = () => {
     .then(res => {
       if (res.data.code == 200) {
         const avgForSubjectSomeoneStudent = res.data.data.avgForSubjectSomeoneStudent
-        const avgForTotalpointsAllStudent = res.data.data.avgForTotalpointsAllStudent
+        avgForTotalpointsAllStudent.value = res.data.data.avgForTotalpointsAllStudent.toFixed(2)
+        const avgForSubjectAllStudent = res.data.data.avgForSubjectAllStudent
         const standardDeviationForTotalpointsAllStudentOneSubject = res.data.data.standardDeviationForTotalpointsAllStudentOneSubject
-        avgForTotalpointsSomeoneStudent.value = res.data.data.avgForTotalpointsSomeoneStudent[0]       
-        standardDeviationForTotalpointsAllStudent.value = res.data.data.standardDeviationForTotalpointsAllStudent
+        avgForTotalpointsSomeoneStudent.value = res.data.data.avgForTotalpointsSomeoneStudent[0].toFixed(2)       
+        standardDeviationForTotalpointsAllStudent.value = res.data.data.standardDeviationForTotalpointsAllStudent.toFixed(2)
         const data4 = []
         const xAxisData = []
-        const data10 = []
+        // const data10 = []
         const data11 = []
+        const data12_1 = []
+        const data12_2 = []
         for (let key in avgForSubjectSomeoneStudent) {
           data4.push({
             name: key,
             value: avgForSubjectSomeoneStudent[key].toFixed(2)
           })
           xAxisData.push(key)
+          data12_1.push(avgForSubjectSomeoneStudent[key])
         }
-        for (let key in avgForTotalpointsAllStudent) {
-          data10.push({
-            name: key,
-            value: avgForTotalpointsAllStudent[key].toFixed(2)
-          })
+        for (let key in avgForSubjectAllStudent) {
+          data12_2.push(avgForSubjectAllStudent[key])
         }
+        // for (let key in avgForTotalpointsAllStudent) {
+        //   data10.push({
+        //     name: key,
+        //     value: avgForTotalpointsAllStudent[key].toFixed(2)
+        //   })
+        // }
         for (let key in standardDeviationForTotalpointsAllStudentOneSubject) {
           data11.push({
             name: key,
@@ -422,30 +520,30 @@ const getPassrate = () => {
             }
           ]
         }
-        option10.value = {
-          title: {
-            text: '所有人总成绩平均分',
-            left: 'center',
-          },
-          tooltip: {
-            trigger: 'item'
-          },
-          series: [
-            {
-              name: '分数',
-              type: 'pie',
-              radius: '50%',
-              data: data10,
-              emphasis: {
-                itemStyle: {
-                  shadowBlur: 10,
-                  shadowOffsetX: 0,
-                  shadowColor: 'rgba(0, 0, 0, 0.5)'
-                }
-              }
-            }
-          ]
-        }
+        // option10.value = {
+        //   title: {
+        //     text: '所有人总成绩平均分',
+        //     left: 'center',
+        //   },
+        //   tooltip: {
+        //     trigger: 'item'
+        //   },
+        //   series: [
+        //     {
+        //       name: '分数',
+        //       type: 'pie',
+        //       radius: '50%',
+        //       data: data10,
+        //       emphasis: {
+        //         itemStyle: {
+        //           shadowBlur: 10,
+        //           shadowOffsetX: 0,
+        //           shadowColor: 'rgba(0, 0, 0, 0.5)'
+        //         }
+        //       }
+        //     }
+        //   ]
+        // }
         option11.value = {
           title: {
             text: '所有学生单科成绩标准差',
@@ -470,9 +568,62 @@ const getPassrate = () => {
             }
           ]
         }
+        option12.value = {
+          title: {
+            text: '所有学生每科平均分和当前学生每科平均分比较'
+          },
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
+          },
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          yAxis: {
+            type: 'value',
+            boundaryGap: [0, 0.01],
+            max: 100
+          },
+          xAxis: {
+            type: 'category',
+            data: xAxisData
+          },
+          series: [
+            {
+              name: '当前学生平均分',
+              type: 'bar',
+              data: data12_1
+            },
+            {
+              name: '所有学生平均分',
+              type: 'bar',
+              data: data12_2
+            }
+          ]
+        }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        avgForTotalpointsSomeoneStudent.value = 0
+        standardDeviationForTotalpointsAllStudent.value = 0
+        option4.value = {}
+        // option10.value = {}
+        option11.value = {}
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        avgForTotalpointsSomeoneStudent.value = 0
+        standardDeviationForTotalpointsAllStudent.value = 0
+        option4.value = {}
+        // option10.value = {}
+        option11.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
@@ -565,12 +716,19 @@ const getRegression = () => {
         ]}
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        option5.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      option5.value = {}
       ElMessage(err)
       reject(err)
     })
@@ -597,20 +755,44 @@ const getClasspassrateForTea = () => {
           })
         }
         option6.value = {
-          ...option6.value,
+          title: {
+            text: '相同年级 学科分析 及格率',
+            left: 'center'
+          },
+          tooltip: {
+            trigger: 'item'
+          },
           series: [
-            ...option6.series[0],
-            data
+            {
+              name: '及格率',
+              type: 'pie',
+              radius: '50%',
+              data,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+              }
+            }
           ]
         }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        option6.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      option6.value = {}
       ElMessage(err)
       reject(err)
     })
@@ -636,20 +818,44 @@ const getClasspassrateForTeaBySex = () => {
           })
         }
         option7.value = {
-          ...option7.value,
+          title: {
+            text: '相同学科同班不同性别 及格率',
+            left: 'center'
+          },
+          tooltip: {
+            trigger: 'item'
+          },
           series: [
-            ...option7.series[0],
-            data
+            {
+              name: '及格率',
+              type: 'pie',
+              radius: '50%',
+              data,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+              }
+            }
           ]
         }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        option7.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      option7.value = {}
       ElMessage(err)
       reject(err)
     })
@@ -678,20 +884,44 @@ const getClasspassrateForTeaByScore = () => {
           })
         }
         option8.value = {
-          ...option8.value,
+          title: {
+            text: '不同学科同一年级 及格率',
+            left: 'center'
+          },
+          tooltip: {
+            trigger: 'item'
+          },
           series: [
-            ...option8.series[0],
-            data
+            {
+              name: '及格率',
+              type: 'pie',
+              radius: '50%',
+              data,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+              }
+            }
           ]
         }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        option8.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      option8.value = {}
       ElMessage(err)
       reject(err)
     })
@@ -720,20 +950,44 @@ const getClasspassrateForTeaByScoreRange = () => {
           })
         }
         option9.value = {
-          ...option9.value,
+          title: {
+            text: '按分数排名段分析：不同分数排名段，同一学期',
+            left: 'center'
+          },
+          tooltip: {
+            trigger: 'item'
+          },
           series: [
-            ...option9.series[0],
-            data
+            {
+              name: '及格率',
+              type: 'pie',
+              radius: '50%',
+              data,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+              }
+            }
           ]
         }
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        option9.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      option9.value = {}
       ElMessage(err)
       reject(err)
     })
@@ -767,12 +1021,21 @@ const getEntitySuggest = () => {
         stability.value = res.data.data.stability
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        dispersionMsgMap.value = []
+        stability.value = {}
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      dispersionMsgMap.value = []
+      stability.value = {}
       ElMessage(err)
       reject(err)
     })
@@ -795,8 +1058,8 @@ const getTotalSuggest = () => {
     .then(res => {
       if (res.data.code === 200) {
         const map1 = {
-          ...res.ds_sxMapMsg,
-          ...ds_ssMapMsg
+          ...res.data.data.ds_sxMapMsg,
+          ...res.data.data.ds_ssMapMsg
         }
         const arr = []
         for (let key in map1) {
@@ -808,12 +1071,19 @@ const getTotalSuggest = () => {
         mapMsg.value = arr
         resolve(res)
       }
+      else if (res.data.code === 401) {
+        ElMessage('登录失效！')
+        window.sessionStorage.removeItem('juese')
+        window.location.reload()
+      }
       else {
+        mapMsg.value = []
         ElMessage(res.data.msg)
         reject(res)
       }
     })
     .catch(err => {
+      mapMsg.value = []
       ElMessage(err)
       reject(err)
     })
@@ -1008,120 +1278,124 @@ const option5 = ref({})
 //     }
 //   ]
 // })
-const option6 = ref({
-  title: {
-    text: '相同年级 学科分析 及格率',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '及格率',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 58.33, name: '五班' },
-        { value: 41.667, name: '二班' }
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
-const option7 = ref({
-  title: {
-    text: '相同学科同班不同性别 及格率',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '及格率',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 0.4, name: '女' },
-        { value: 0.6, name: '男' }
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
-const option8 = ref({
-  title: {
-    text: '不同学科同一年级 及格率',
-    left: 'center'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '及格率',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { name: '数学', value: 0.196 },
-        { name: '英语', value: 0.157 },
-        { name: '生物', value: 0.118 },
-        { name: '历史', value: 0.118 },
-        { name: '地理', value: 0.157 },
-        { name: '语文', value: 0.118 },
-        { name: '政治', value: 0.118 }
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
-const option9 = ref({
-  title: {
-    text: '按分数排名段分析：不同分数排名段，同一学期',
-    left: 'center',
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '及格率',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { name: '后优生', value: 0.231 },
-        { name: '中等生', value: 0.308 },
-        { name: '优生', value: 0.462 }
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
+const option6 = ref({})
+// const option6 = ref({
+//   title: {
+//     text: '相同年级 学科分析 及格率',
+//     left: 'center'
+//   },
+//   tooltip: {
+//     trigger: 'item'
+//   },
+//   series: [
+//     {
+//       name: '及格率',
+//       type: 'pie',
+//       radius: '50%',
+//       data: [
+//         { value: 58.33, name: '五班' },
+//         { value: 41.667, name: '二班' }
+//       ],
+//       emphasis: {
+//         itemStyle: {
+//           shadowBlur: 10,
+//           shadowOffsetX: 0,
+//           shadowColor: 'rgba(0, 0, 0, 0.5)'
+//         }
+//       }
+//     }
+//   ]
+// })
+const option7 = ref({})
+// const option7 = ref({
+//   title: {
+//     text: '相同学科同班不同性别 及格率',
+//     left: 'center'
+//   },
+//   tooltip: {
+//     trigger: 'item'
+//   },
+//   series: [
+//     {
+//       name: '及格率',
+//       type: 'pie',
+//       radius: '50%',
+//       data: [
+//         { value: 0.4, name: '女' },
+//         { value: 0.6, name: '男' }
+//       ],
+//       emphasis: {
+//         itemStyle: {
+//           shadowBlur: 10,
+//           shadowOffsetX: 0,
+//           shadowColor: 'rgba(0, 0, 0, 0.5)'
+//         }
+//       }
+//     }
+//   ]
+// })
+const option8 = ref({})
+// const option8 = ref({
+//   title: {
+//     text: '不同学科同一年级 及格率',
+//     left: 'center'
+//   },
+//   tooltip: {
+//     trigger: 'item'
+//   },
+//   series: [
+//     {
+//       name: '及格率',
+//       type: 'pie',
+//       radius: '50%',
+//       data: [
+//         { name: '数学', value: 0.196 },
+//         { name: '英语', value: 0.157 },
+//         { name: '生物', value: 0.118 },
+//         { name: '历史', value: 0.118 },
+//         { name: '地理', value: 0.157 },
+//         { name: '语文', value: 0.118 },
+//         { name: '政治', value: 0.118 }
+//       ],
+//       emphasis: {
+//         itemStyle: {
+//           shadowBlur: 10,
+//           shadowOffsetX: 0,
+//           shadowColor: 'rgba(0, 0, 0, 0.5)'
+//         }
+//       }
+//     }
+//   ]
+// })
+const option9 = ref({})
+// const option9 = ref({
+//   title: {
+//     text: '按分数排名段分析：不同分数排名段，同一学期',
+//     left: 'center',
+//   },
+//   tooltip: {
+//     trigger: 'item'
+//   },
+//   series: [
+//     {
+//       name: '及格率',
+//       type: 'pie',
+//       radius: '50%',
+//       data: [
+//         { name: '后优生', value: 0.231 },
+//         { name: '中等生', value: 0.308 },
+//         { name: '优生', value: 0.462 }
+//       ],
+//       emphasis: {
+//         itemStyle: {
+//           shadowBlur: 10,
+//           shadowOffsetX: 0,
+//           shadowColor: 'rgba(0, 0, 0, 0.5)'
+//         }
+//       }
+//     }
+//   ]
+// })
 const option10 = ref({})
 // const option10 = ref({
 //   title: {
@@ -1186,37 +1460,7 @@ const option11 = ref({})
 //     }
 //   ]
 // })
-const option12 = ref({
-  title: {
-    text: '所有人总成绩平均分',
-    left: 'center',
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [
-    {
-      name: '分数',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { name: '1520000', value: 50.2 },
-        { name: '150030222', value: 60.1 },
-        { name: '150239293', value: 72 },
-        { name: '151111111', value: 57 },
-        { name: '1511111112', value: 59 },
-        { name: '1511111343', value: 60.2 }
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
-})
+const option12 = ref({})
 const changeGrage = () => {
   formObj.className = ''
   getClass()
@@ -1232,7 +1476,6 @@ const changeGrage = () => {
           style="width: 150px;"
           v-model="formObj.kstime"
           placeholder="考试时间"
-          clearable
           @change="getLastKstime()"
         >
           <el-option  v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
@@ -1243,28 +1486,25 @@ const changeGrage = () => {
           style="width: 150px;"
           v-model="formObj.lastKstime"
           placeholder="上次考试时间"
-          clearable
         >
-          <el-option v-for="item in kstimeData" :label="item.label" :value="item.value" :key="item.value" />
+          <el-option v-for="item in lastKstimeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="年级">
+      <el-form-item label="年级" v-if="juese === 'student'">
         <el-select
           style="width: 150px;"
           v-model="formObj.gradeName"
           placeholder="年级"
-          clearable
           @change="changeGrage()"
         >
           <el-option v-for="item in gradeData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="班级">
+      <el-form-item label="班级" v-if="juese === 'student'">
         <el-select
           style="width: 150px;"
           v-model="formObj.className"
           placeholder="班级"
-          clearable
         >
           <el-option v-for="item in classData" :label="item.label" :value="item.value" :key="item.value" />
         </el-select>
@@ -1281,27 +1521,35 @@ const changeGrage = () => {
         <v-chart :option="option3" ref="ref3" class="echart" />
       </div>
     </div>
-    <div class="echarts-block" v-if="juese === 'student'">
+    <div class="echarts-block" v-if="juese === 'student' && avgForTotalpointsSomeoneStudent && standardDeviationForTotalpointsAllStudent">
       <h6>横向分析</h6>
       <div class="echart-group">
-        <el-card style="width: 300px; height: 300px;margin: auto 0;">
+        <el-card style="width: 300px; height: 300px;margin: auto 0;" v-show="avgForTotalpointsSomeoneStudent">
           <div style="display: flex; flex-direction: column">
             <p>当前学生的总分平均分</p>
             <h1 style="margin: 50px auto; font-size: 64px; font-weight: bold;">{{avgForTotalpointsSomeoneStudent}}</h1>
-            <p style="margin: 0 auto;">某学生的总分平均分</p>
+            <p style="margin: 0 auto;">当前学生的总分平均分</p>
           </div>
         </el-card>
-        <el-card style="width: 300px; height: 300px;margin: auto 0;">
+        <el-card style="width: 300px; height: 300px;margin: auto 0;" v-show="avgForTotalpointsSomeoneStudent">
           <div style="display: flex; flex-direction: column">
             <p>整体学生某学段每次考试成绩标准差</p>
             <h1 style="margin: 50px auto; font-size: 64px; font-weight: bold;">{{standardDeviationForTotalpointsAllStudent}}</h1>
             <p style="margin: 0 auto;">整体学生某学段每次考试成绩标准差</p>
           </div>
         </el-card>
+        <el-card style="width: 300px; height: 300px;margin: auto 0;" v-show="avgForTotalpointsSomeoneStudent">
+          <div style="display: flex; flex-direction: column">
+            <p>整体平均分</p>
+            <h1 style="margin: 50px auto; font-size: 64px; font-weight: bold;">{{avgForTotalpointsAllStudent}}</h1>
+            <p style="margin: 0 auto;">整体平均分</p>
+          </div>
+        </el-card>
         <v-chart :option="option4" ref="ref4" class="echart" />
-        <v-chart :option="option10" ref="ref10" class="echart" />
+        <!-- <v-chart :option="option10" ref="ref10" class="echart" /> -->
         <v-chart :option="option11" ref="ref11" class="echart" />
         <v-chart :option="option5" ref="ref5" class="echart" />
+        <v-chart :option="option12" ref="ref12" class="echart" />
       </div>
     </div>
     <div class="echarts-block" v-if="juese === 'teacher'">
@@ -1313,16 +1561,16 @@ const changeGrage = () => {
         <v-chart :option="option9" ref="ref9" class="echart" />
       </div>
     </div>
-    <el-descriptions title="综合建议" border :label-width="90" :column="2" v-if="juese === 'teacher'">
+    <el-descriptions title="综合建议" border :label-width="90" :column="2" v-if="juese === 'teacher' && mapMsg.length > 0">
       <el-descriptions-item :key="index + ''" v-for="(item, index) in mapMsg" :label="item.label">{{item.value}}</el-descriptions-item>
     </el-descriptions>
-    <el-descriptions title="个体建议" :column="3" border style="margin-top: 20px;" v-if="juese === 'student'">
+    <el-descriptions title="个体建议" :column="3" border style="margin-top: 20px;" v-if="juese === 'student' && dispersionMsgMap.length > 0">
       <el-descriptions-item label="排名信息" >{{rankingMsg}}</el-descriptions-item>
       <el-descriptions-item :label="item.label" v-for="(item, index) in dispersionMsgMap" :key="index + ''">
         {{item.value}}
       </el-descriptions-item>
-      <el-descriptions-item label="不稳定发挥的学科" >{{stability.unstabilizationsubjectName}}</el-descriptions-item>
-      <el-descriptions-item label="稳定发挥的学科" >{{stability.stabilizationsubiectame}}</el-descriptions-item>
+      <el-descriptions-item label="不稳定发挥的学科" >{{stability.unstabilizationSubjectName}}</el-descriptions-item>
+      <el-descriptions-item label="稳定发挥的学科" >{{stability.stabilizationSubjectName}}</el-descriptions-item>
     </el-descriptions>
   </el-main>
 </template>
